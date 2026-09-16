@@ -23,8 +23,7 @@ before running them — see [Verifying your download](#verifying-your-download) 
 ## Requirements
 
 - Windows 10/11 (uses `robocopy`, `mklink`-equivalent `New-Item -ItemType
-  SymbolicLink`/`Junction`, and Windows PowerShell 5.1, which ship with
-  Windows).
+  SymbolicLink`, and Windows PowerShell 5.1, which ship with Windows).
 - Administrator rights (needed to create symbolic links). The tool
   self-elevates and shows a UAC prompt when started.
 
@@ -36,13 +35,7 @@ before running them — see [Verifying your download](#verifying-your-download) 
    move.
 3. **Destination folder** — Browse to where the files should go. You can
    create a new folder from the browse dialog.
-4. Pick a **link type**:
-   - **Symbolic link** (default/recommended) — works even if the
-     destination is on another drive or a network share.
-   - **Junction** — local drives only, slightly more compatible with older
-     tools that don't understand symlinks, and works even without admin
-     rights on its own (this tool still requires admin overall).
-5. Click **Start Transfer**, confirm the summary dialog, and watch the log.
+4. Click **Start Transfer**, confirm the summary dialog, and watch the log.
 
 When it finishes, the destination folder holds all the files, and the
 original folder path now resolves to that same content through the link —
@@ -57,8 +50,7 @@ robocopy "<source>" "<destination>" /MOVE /E /IS /R:5 /W:5 /XJ /MT:8
 ```
 
 then, once everything copied cleanly, deletes the now-empty source folder
-and recreates it as a symbolic link or junction pointing at the
-destination.
+and recreates it as a symbolic link pointing at the destination.
 
 ## Scenarios it handles
 
@@ -116,7 +108,7 @@ to check for yourself:
   Tasks, or the Startup folder — it only acts on the two folders you pick,
   while the window is open.
 - **Admin rights are used for exactly one thing**: creating the symbolic
-  link/junction at the end, which Windows requires elevation for.
+  link at the end, which Windows requires elevation for.
 
 If Windows SmartScreen blocks the `.bat` with "Windows protected your PC":
 click **More info**, then **Run anyway**. If Defender quarantines a file,
@@ -143,5 +135,3 @@ files — re-download them.
   unusual setups (reparse points *inside* the source tree, files with
   paths near Windows' `MAX_PATH` limit, etc.) aren't specially handled
   beyond what `robocopy` itself does.
-- Junctions only work for local volumes; use a symbolic link if the
-  destination is a network path.

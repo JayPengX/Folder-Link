@@ -3,9 +3,9 @@
     FolderLink
     ----------
     Moves everything inside a chosen "source" folder into a chosen
-    "destination" folder, then leaves a link (symbolic link or junction) at
-    the original location so any shortcut, saved path, or other program that
-    still points at the source folder keeps working transparently.
+    "destination" folder, then leaves a symbolic link at the original
+    location so any shortcut, saved path, or other program that still
+    points at the source folder keeps working transparently.
 
     This is the classic "robocopy /MOVE + mklink" trick, wrapped in a small
     WinForms UI, with retry handling for locked files, disk-space and path
@@ -55,7 +55,6 @@ $script:ErrFile       = $null
 $script:LastOutLength = 0
 $script:PendingSource = $null
 $script:PendingDest   = $null
-$script:PendingLink   = 'Symbolic'
 $script:LogDir        = Join-Path $env:LOCALAPPDATA 'FolderLink\Logs'
 New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
 
@@ -76,8 +75,6 @@ function Set-Busy {
     $destBrowse.Enabled      = -not $Busy
     $sourceBox.Enabled       = -not $Busy
     $destBox.Enabled         = -not $Busy
-    $symLinkRadio.Enabled    = -not $Busy
-    $junctionRadio.Enabled   = -not $Busy
     $cancelButton.Enabled    = $Busy
     if ($Busy) { $progressBar.Style = 'Marquee' } else { $progressBar.Style = 'Blocks'; $progressBar.Value = 0 }
 }
@@ -149,7 +146,7 @@ function Test-PreFlight {
 # Robocopy driven move
 # ---------------------------------------------------------------------------
 function Start-Transfer {
-    param([string]$Source, [string]$Destination, [string]$LinkType)
+    param([string]$Source, [string]$Destination)
 
     $preflightError = Test-PreFlight -Source $Source -Destination $Destination
     if ($preflightError) {
@@ -158,7 +155,7 @@ function Start-Transfer {
     }
 
     $confirm = [System.Windows.Forms.MessageBox]::Show(
-        "This will move ALL files and subfolders from:`n$Source`n`nto:`n$Destination`n`nand replace the original folder with a $LinkType link pointing to the new location.`n`nContinue?",
+        "This will move ALL files and subfolders from:`n$Source`n`nto:`n$Destination`n`nand replace the original folder with a symbolic link pointing to the new location.`n`nContinue?",
         'Confirm Transfer', 'YesNo', 'Question')
     if ($confirm -ne 'Yes') { return }
 
@@ -166,7 +163,6 @@ function Start-Transfer {
 
     $script:PendingSource = $Source
     $script:PendingDest   = $Destination
-    $script:PendingLink   = $LinkType
 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $script:OutFile = Join-Path $script:LogDir "transfer_$stamp.out.log"
@@ -216,7 +212,6 @@ function Complete-Transfer {
 
     $Source      = $script:PendingSource
     $Destination = $script:PendingDest
-    $LinkType    = $script:PendingLink
 
     if ($exitCode -ge 8) {
         Write-Log "`nRobocopy reported errors (exit code $exitCode)."
@@ -245,21 +240,17 @@ function Complete-Transfer {
         }
 
         Remove-Item -LiteralPath $Source -Force -Recurse
-        if ($LinkType -eq 'Symbolic') {
-            New-Item -ItemType SymbolicLink -Path $Source -Target $Destination -ErrorAction Stop | Out-Null
-        } else {
-            New-Item -ItemType Junction -Path $Source -Target $Destination -ErrorAction Stop | Out-Null
-        }
+        New-Item -ItemType SymbolicLink -Path $Source -Target $Destination -ErrorAction Stop | Out-Null
         Write-Log "Link created:`n  $Source  -->  $Destination"
         Set-Status 'Done'
         [System.Windows.Forms.MessageBox]::Show(
-            "Transfer complete.`n`nAll files now live at:`n$Destination`n`nand a $LinkType link was left at the original location so existing shortcuts keep working.",
+            "Transfer complete.`n`nAll files now live at:`n$Destination`n`nand a symbolic link was left at the original location so existing shortcuts keep working.",
             'FolderLink', 'OK', 'Information') | Out-Null
     } catch {
         Write-Log "Error while finalizing: $($_.Exception.Message)"
         Set-Status 'Failed while finalizing — see log'
         [System.Windows.Forms.MessageBox]::Show(
-            "Files were moved, but creating the link failed:`n$($_.Exception.Message)`n`nYou can create it manually, e.g.:`nmklink /J `"$Source`" `"$Destination`"",
+            "Files were moved, but creating the link failed:`n$($_.Exception.Message)`n`nYou can create it manually, e.g.:`nmklink /D `"$Source`" `"$Destination`"",
             'FolderLink', 'OK', 'Error') | Out-Null
     }
 
@@ -284,8 +275,8 @@ function Tail-Output {
 # ---------------------------------------------------------------------------
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'FolderLink — Move a folder and leave a link behind'
-$form.Size = New-Object System.Drawing.Size(700, 560)
-$form.MinimumSize = New-Object System.Drawing.Size(620, 460)
+$form.Size = New-Object System.Drawing.Size(700, 500)
+$form.MinimumSize = New-Object System.Drawing.Size(620, 400)
 $form.StartPosition = 'CenterScreen'
 $form.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 
@@ -327,53 +318,33 @@ $destBrowse.Location = New-Object System.Drawing.Point(($margin + $labelWidth + 
 $destBrowse.Size = New-Object System.Drawing.Size(90, 24)
 $destBrowse.Anchor = 'Top,Right'
 
-# Link type
-$linkGroup = New-Object System.Windows.Forms.GroupBox
-$linkGroup.Text = 'Link type left at the original location'
-$linkGroup.Location = New-Object System.Drawing.Point($margin, 90)
-$linkGroup.Size = New-Object System.Drawing.Size(645, 55)
-$linkGroup.Anchor = 'Top,Left,Right'
-
-$symLinkRadio = New-Object System.Windows.Forms.RadioButton
-$symLinkRadio.Text = 'Symbolic link (recommended — works across drives and network paths)'
-$symLinkRadio.Location = New-Object System.Drawing.Point(15, 15)
-$symLinkRadio.Size = New-Object System.Drawing.Size(600, 20)
-$symLinkRadio.Checked = $true
-
-$junctionRadio = New-Object System.Windows.Forms.RadioButton
-$junctionRadio.Text = 'Junction (local drives only, no admin needed on its own)'
-$junctionRadio.Location = New-Object System.Drawing.Point(15, 32)
-$junctionRadio.Size = New-Object System.Drawing.Size(600, 20)
-
-$linkGroup.Controls.AddRange(@($symLinkRadio, $junctionRadio))
-
 # Buttons row
 $startButton = New-Object System.Windows.Forms.Button
 $startButton.Text = 'Start Transfer'
-$startButton.Location = New-Object System.Drawing.Point($margin, 155)
+$startButton.Location = New-Object System.Drawing.Point($margin, 95)
 $startButton.Size = New-Object System.Drawing.Size(140, 34)
 $startButton.Font = New-Object System.Drawing.Font('Segoe UI', 9, [System.Drawing.FontStyle]::Bold)
 
 $cancelButton = New-Object System.Windows.Forms.Button
 $cancelButton.Text = 'Cancel'
-$cancelButton.Location = New-Object System.Drawing.Point(($margin + 150), 155)
+$cancelButton.Location = New-Object System.Drawing.Point(($margin + 150), 95)
 $cancelButton.Size = New-Object System.Drawing.Size(100, 34)
 $cancelButton.Enabled = $false
 
 $openLogButton = New-Object System.Windows.Forms.Button
 $openLogButton.Text = 'Open Log Folder'
-$openLogButton.Location = New-Object System.Drawing.Point(($margin + 260), 155)
+$openLogButton.Location = New-Object System.Drawing.Point(($margin + 260), 95)
 $openLogButton.Size = New-Object System.Drawing.Size(130, 34)
 $openLogButton.Anchor = 'Top,Left'
 
 $statusLabel = New-Object System.Windows.Forms.Label
 $statusLabel.Text = 'Status: Idle'
-$statusLabel.Location = New-Object System.Drawing.Point($margin, 198)
+$statusLabel.Location = New-Object System.Drawing.Point($margin, 138)
 $statusLabel.Size = New-Object System.Drawing.Size(600, 20)
 $statusLabel.Anchor = 'Top,Left,Right'
 
 $progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = New-Object System.Drawing.Point($margin, 220)
+$progressBar.Location = New-Object System.Drawing.Point($margin, 160)
 $progressBar.Size = New-Object System.Drawing.Size(645, 18)
 $progressBar.Anchor = 'Top,Left,Right'
 $progressBar.Style = 'Blocks'
@@ -383,14 +354,13 @@ $logBox.Multiline = $true
 $logBox.ScrollBars = 'Vertical'
 $logBox.ReadOnly = $true
 $logBox.Font = New-Object System.Drawing.Font('Consolas', 9)
-$logBox.Location = New-Object System.Drawing.Point($margin, 245)
+$logBox.Location = New-Object System.Drawing.Point($margin, 185)
 $logBox.Size = New-Object System.Drawing.Size(645, 250)
 $logBox.Anchor = 'Top,Bottom,Left,Right'
 
 $form.Controls.AddRange(@(
     $sourceLabel, $sourceBox, $sourceBrowse,
     $destLabel, $destBox, $destBrowse,
-    $linkGroup,
     $startButton, $cancelButton, $openLogButton,
     $statusLabel, $progressBar, $logBox
 ))
@@ -426,8 +396,7 @@ $destBrowse.Add_Click({
 })
 
 $startButton.Add_Click({
-    $linkType = if ($symLinkRadio.Checked) { 'Symbolic' } else { 'Junction' }
-    Start-Transfer -Source $sourceBox.Text.Trim() -Destination $destBox.Text.Trim() -LinkType $linkType
+    Start-Transfer -Source $sourceBox.Text.Trim() -Destination $destBox.Text.Trim()
 })
 
 $cancelButton.Add_Click({
