@@ -8,12 +8,12 @@ combo, just wrapped in a UI so you don't have to type paths in `cmd`.
 
 ## Download
 
-- **[Download ZIP (v1.0.0)](https://github.com/jaypengx-collab/Folder-Link/archive/refs/tags/v1.0.0.zip)**
+- **[Download ZIP](https://github.com/jaypengx-collab/Folder-Link/archive/refs/heads/claude/windows-file-transfer-symlinks-yt5iiz.zip)**
   — everything in one file, or use the green **Code → Download ZIP**
   button at the top of this repo.
 - Or grab the two files individually:
-  [`FolderLink.ps1`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/v1.0.0/FolderLink.ps1) +
-  [`Run-FolderLink.bat`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/v1.0.0/Run-FolderLink.bat)
+  [`FolderLink.ps1`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/FolderLink.ps1) +
+  [`Run-FolderLink.bat`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/Run-FolderLink.bat)
   (right-click each link → *Save link as...*, keep both in the same
   folder).
 
