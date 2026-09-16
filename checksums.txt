@@ -7,5 +7,5 @@ On Windows (PowerShell):
 On Linux/macOS:
     sha256sum FolderLink.ps1 Run-FolderLink.bat
 
-361ed4c97f4dfe858053bb6a5e30af83e1c2ffc7f72e0ebb27b1ed056a155e17  FolderLink.ps1
+a2b8a27f88b9ae23ab0ec4c94c50319ab278755fb0d1ced0f1771fdc506fa8f3  FolderLink.ps1
 879793d3af34ee6d8ce58f93bea6e39ab2c3a6385d3c01e1cc64d1b86a853877  Run-FolderLink.bat

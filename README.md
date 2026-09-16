@@ -6,6 +6,23 @@ saved setting, or program that still points at the old location keeps
 working. This is the same idea as the classic `robocopy /move` + `mklink`
 combo, just wrapped in a UI so you don't have to type paths in `cmd`.
 
+**程式介面已完全採用繁體中文**，操作步驟如下：
+
+## 中文使用說明
+
+1. 下載並解壓縮後，雙擊 **`Run-FolderLink.bat`**。
+2. 出現「使用者帳戶控制」視窗時，按下**「是」**（本工具需要系統管理員權限才能建立捷徑）。
+3. 在「**來源資料夾**」欄位按「**瀏覽...**」，選擇要搬移檔案的資料夾。
+4. 在「**目的資料夾**」欄位按「**瀏覽...**」，選擇（或建立）檔案要搬到的新位置。
+5. 按下「**開始搬移**」，在跳出的確認視窗按「**是**」。
+6. 等待畫面下方的記錄跑完即完成。完成後，原本的資料夾位置會變成一個指向新位置的捷徑，桌面捷徑、其他程式記住的路徑都不需要更動，一樣能正常使用。
+
+若過程中某個檔案正在被其他程式使用而無法搬移，程式會自動重試幾次；如果還是不行，會停下來並在記錄中說明是哪個檔案，把該程式關閉後再按一次「開始搬移」即可，已經搬過的檔案不會被重複處理。
+
+若 Windows 顯示「Windows 已保護您的電腦」的藍色警告畫面，這是因為這是一個新發布、未經付費簽章的小工具，非常正常，並非偵測到病毒。可以點選「**其他資訊**」，再按「**仍要執行**」即可繼續（下方英文版說明中的
+[Windows warned me this might be dangerous — is it?](#windows-warned-me-this-might-be-dangerous--is-it)
+一節有更詳細的原因說明）。
+
 ## Download
 
 - **[Download ZIP](https://github.com/jaypengx-collab/Folder-Link/archive/refs/heads/claude/windows-file-transfer-symlinks-yt5iiz.zip)**
@@ -29,13 +46,17 @@ before running them — see [Verifying your download](#verifying-your-download) 
 
 ## Usage
 
+The app's UI is in Traditional Chinese (see [中文使用說明](#中文使用說明) above
+for the same steps in Chinese).
+
 1. Double-click **`Run-FolderLink.bat`** (or right-click `FolderLink.ps1` →
    *Run with PowerShell*). Accept the UAC prompt.
-2. **Source folder** — Browse to the folder whose *contents* you want to
-   move.
-3. **Destination folder** — Browse to where the files should go. You can
-   create a new folder from the browse dialog.
-4. Click **Start Transfer**, confirm the summary dialog, and watch the log.
+2. **來源資料夾 (Source folder)** — Browse to the folder whose *contents*
+   you want to move.
+3. **目的資料夾 (Destination folder)** — Browse to where the files should
+   go. You can create a new folder from the browse dialog.
+4. Click **開始搬移 (Start Transfer)**, confirm the summary dialog, and
+   watch the log.
 
 When it finishes, the destination folder holds all the files, and the
 original folder path now resolves to that same content through the link —
@@ -58,9 +79,10 @@ and recreates it as a symbolic link pointing at the destination.
   seconds apart, then moves on to the rest instead of stalling forever. If
   a file is still locked afterward, the tool **stops before touching the
   original folder** (no delete, no link) and tells you which run to check
-  in the log. Close whatever has the file open and click **Start
-  Transfer** again — files already moved are gone from the source, so the
-  second run only deals with what's left; nothing is copied twice.
+  in the log. Close whatever has the file open and click **開始搬移
+  (Start Transfer)** again — files already moved are gone from the
+  source, so the second run only deals with what's left; nothing is
+  copied twice.
 - **Not enough disk space** — checked before anything is touched, using
   the actual size of the source folder vs. free space at the destination
   drive.
@@ -87,8 +109,9 @@ and recreates it as a symbolic link pointing at the destination.
 
 Each run writes robocopy's raw output to
 `%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.out.log` (and a
-`.err.log` for anything sent to stderr). Use **Open Log Folder** in the
-app to jump there — handy if you need to see exactly which files failed.
+`.err.log` for anything sent to stderr). Use **開啟記錄資料夾 (Open Log
+Folder)** in the app to jump there — handy if you need to see exactly
+which files failed.
 
 ## Windows warned me this might be dangerous — is it?
 
