@@ -22,4 +22,8 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FolderLink.Core\FolderLink.Core.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -173,6 +173,32 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 The resulting `FolderLink.exe` lands in `src/FolderLink/bin/Release/net8.0-windows/win-x64/publish/`.
 
+## Testing
+
+The code is split into two parts:
+
+- **[`src/FolderLink.Core`](src/FolderLink.Core)** — plain, OS-agnostic
+  logic with no UI and no `robocopy` calls: the pre-flight checks that
+  decide whether a move is safe (same/nested folders, an already-linked
+  source or destination, disk space) and the recursive size calculation.
+  This is the part where a bug could mean lost or corrupted files, so
+  it's covered by an automated test suite in
+  [`src/FolderLink.Core.Tests`](src/FolderLink.Core.Tests) — run it with:
+  ```
+  cd src/FolderLink.Core.Tests
+  dotnet test
+  ```
+  These tests run on real temporary directories (including real symbolic
+  links) and check every refusal case (same folder, nested either
+  direction, already a link, sibling folders that merely share a name
+  prefix) alongside the normal, allowed case.
+- **[`src/FolderLink`](src/FolderLink)** — the WinForms UI and the actual
+  `robocopy` invocation. This part is Windows-only (it needs `robocopy`
+  and real file locks to exercise properly) and isn't covered by
+  automated tests; it's been verified by compiling cleanly and by manual
+  code review, but a real run on Windows is still the final check before
+  trusting it with files you care about.
+
 ## Older PowerShell version
 
 An earlier version of this tool shipped as a `.ps1` script + `.bat`
