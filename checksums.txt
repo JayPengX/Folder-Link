@@ -1,0 +1,11 @@
+SHA256 checksums — verify your download matches these before running.
+
+On Windows (PowerShell):
+    Get-FileHash .\FolderLink.ps1
+    Get-FileHash .\Run-FolderLink.bat
+
+On Linux/macOS:
+    sha256sum FolderLink.ps1 Run-FolderLink.bat
+
+1bdba64f7e8714ed10b14de1da3809002a97afc7d2c1b8c75b2f61005affa0bd  FolderLink.ps1
+879793d3af34ee6d8ce58f93bea6e39ab2c3a6385d3c01e1cc64d1b86a853877  Run-FolderLink.bat

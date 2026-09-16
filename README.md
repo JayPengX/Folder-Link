@@ -6,6 +6,20 @@ saved setting, or program that still points at the old location keeps
 working. This is the same idea as the classic `robocopy /move` + `mklink`
 combo, just wrapped in a UI so you don't have to type paths in `cmd`.
 
+## Download
+
+- **[Download ZIP (v1.0.0)](https://github.com/jaypengx-collab/Folder-Link/archive/refs/tags/v1.0.0.zip)**
+  — everything in one file, or use the green **Code → Download ZIP**
+  button at the top of this repo.
+- Or grab the two files individually:
+  [`FolderLink.ps1`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/v1.0.0/FolderLink.ps1) +
+  [`Run-FolderLink.bat`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/v1.0.0/Run-FolderLink.bat)
+  (right-click each link → *Save link as...*, keep both in the same
+  folder).
+
+After downloading, verify the files against [`checksums.txt`](checksums.txt)
+before running them — see [Verifying your download](#verifying-your-download) below.
+
 ## Requirements
 
 - Windows 10/11 (uses `robocopy`, `mklink`-equivalent `New-Item -ItemType
@@ -16,7 +30,7 @@ combo, just wrapped in a UI so you don't have to type paths in `cmd`.
 
 ## Usage
 
-1. Double-click **`Run FolderLink.bat`** (or right-click `FolderLink.ps1` →
+1. Double-click **`Run-FolderLink.bat`** (or right-click `FolderLink.ps1` →
    *Run with PowerShell*). Accept the UAC prompt.
 2. **Source folder** — Browse to the folder whose *contents* you want to
    move.
@@ -83,6 +97,45 @@ Each run writes robocopy's raw output to
 `%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.out.log` (and a
 `.err.log` for anything sent to stderr). Use **Open Log Folder** in the
 app to jump there — handy if you need to see exactly which files failed.
+
+## Windows warned me this might be dangerous — is it?
+
+If SmartScreen or Microsoft Defender flags this the first time you run it,
+that's expected for **any** new, unsigned tool from a small publisher —
+Windows scores files partly by how many people have already run them
+without incident, and a fresh script naturally starts at zero. It is not a
+sign of an actual detected threat here. A few things that make that easy
+to check for yourself:
+
+- **The source is plain, readable PowerShell** — nothing obfuscated,
+  Base64-encoded, or downloaded and run at runtime. Open `FolderLink.ps1`
+  in Notepad and read it top to bottom; every action it can take is right
+  there.
+- **No network access at all.** It never calls out to the internet.
+- **No persistence.** It doesn't touch the registry Run keys, Scheduled
+  Tasks, or the Startup folder — it only acts on the two folders you pick,
+  while the window is open.
+- **Admin rights are used for exactly one thing**: creating the symbolic
+  link/junction at the end, which Windows requires elevation for.
+
+If Windows SmartScreen blocks the `.bat` with "Windows protected your PC":
+click **More info**, then **Run anyway**. If Defender quarantines a file,
+you can restore it from Windows Security → Virus & threat protection →
+Protection history, or download it again after verifying the checksum
+below.
+
+### Verifying your download
+
+Compare the SHA-256 hash of what you downloaded against
+[`checksums.txt`](checksums.txt):
+
+```powershell
+Get-FileHash .\FolderLink.ps1
+Get-FileHash .\Run-FolderLink.bat
+```
+
+If the hashes don't match the ones in `checksums.txt`, don't run the
+files — re-download them.
 
 ## Limitations
 

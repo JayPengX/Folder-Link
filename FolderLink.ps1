@@ -11,6 +11,12 @@
     WinForms UI, with retry handling for locked files, disk-space and path
     sanity checks, and a resumable failure mode (re-running the tool after
     closing whatever locked a file will pick up only what's left).
+
+    This script makes no network connections, downloads or runs no remote
+    code, and makes no persistence changes (no registry Run keys, no
+    scheduled tasks, no startup folder entries). It only touches the two
+    folders you explicitly choose in the UI. It requests Administrator
+    rights solely because creating a symbolic link requires them.
 #>
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -188,9 +194,11 @@ function Start-Transfer {
     try {
         # Redirecting straight to files (rather than reading the process's
         # stdout/stderr pipes ourselves) avoids pipe-buffer deadlocks and
-        # lets a simple UI timer just tail the growing file.
+        # lets a simple UI timer just tail the growing file. Minimized
+        # (not hidden) so the console window robocopy briefly owns is
+        # still visible in the taskbar if anyone wants to check on it.
         $script:RoboProcess = Start-Process -FilePath 'robocopy.exe' -ArgumentList $argList `
-            -WindowStyle Hidden -PassThru `
+            -WindowStyle Minimized -PassThru `
             -RedirectStandardOutput $script:OutFile -RedirectStandardError $script:ErrFile
     } catch {
         Write-Log "Failed to start robocopy: $($_.Exception.Message)"
