@@ -4,13 +4,14 @@ A small Windows GUI tool that moves everything inside one folder to a new
 location and leaves a link behind at the original path, so any shortcut,
 saved setting, or program that still points at the old location keeps
 working. This is the same idea as the classic `robocopy /move` + `mklink`
-combo, just wrapped in a UI so you don't have to type paths in `cmd`.
+combo, wrapped in a single-file app so you don't have to type paths in
+`cmd`.
 
 **程式介面已完全採用繁體中文**，操作步驟如下：
 
 ## 中文使用說明
 
-1. 下載並解壓縮後，雙擊 **`Run-FolderLink.bat`**。
+1. 下載 **`FolderLink.exe`**（單一檔案，不需安裝），直接雙擊執行。
 2. 出現「使用者帳戶控制」視窗時，按下**「是」**（本工具需要系統管理員權限才能建立捷徑）。
 3. 在「**來源資料夾**」欄位按「**瀏覽...**」，選擇要搬移檔案的資料夾。
 4. 在「**目的資料夾**」欄位按「**瀏覽...**」，選擇（或建立）檔案要搬到的新位置。
@@ -25,32 +26,37 @@ combo, just wrapped in a UI so you don't have to type paths in `cmd`.
 
 ## Download
 
-- **[Download ZIP](https://github.com/jaypengx-collab/Folder-Link/archive/refs/heads/claude/windows-file-transfer-symlinks-yt5iiz.zip)**
-  — everything in one file, or use the green **Code → Download ZIP**
-  button at the top of this repo.
-- Or grab the two files individually:
-  [`FolderLink.ps1`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/FolderLink.ps1) +
-  [`Run-FolderLink.bat`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/Run-FolderLink.bat)
-  (right-click each link → *Save link as...*, keep both in the same
-  folder).
+**[`FolderLink.exe`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/FolderLink.exe)**
+— one file, no installer, no dependencies to install first (it bundles its
+own .NET runtime). Right-click the link → *Save link as...*, or use the
+green **Code → Download ZIP** button at the top of this repo to get the
+whole source tree instead.
 
-After downloading, verify the files against [`checksums.txt`](checksums.txt)
-before running them — see [Verifying your download](#verifying-your-download) below.
+The download is around 70 MB — that's normal for a self-contained .NET
+app that carries its own runtime so it works on a bare Windows machine
+with nothing preinstalled.
+
+After downloading, verify it against [`checksums.txt`](checksums.txt)
+before running it — see [Verifying your download](#verifying-your-download)
+below.
+
+Don't want to run a prebuilt binary at all? See
+[Build it yourself](#build-it-yourself) — the full C# source is in this
+repo and builds with one command.
 
 ## Requirements
 
-- Windows 10/11 (uses `robocopy`, `mklink`-equivalent `New-Item -ItemType
-  SymbolicLink`, and Windows PowerShell 5.1, which ship with Windows).
-- Administrator rights (needed to create symbolic links). The tool
-  self-elevates and shows a UAC prompt when started.
+- Windows 10 or 11, 64-bit. Nothing else needs to be installed — the exe
+  is self-contained.
+- Administrator rights (needed to create the symbolic link). Windows
+  shows the UAC prompt automatically as soon as you launch the app.
 
 ## Usage
 
 The app's UI is in Traditional Chinese (see [中文使用說明](#中文使用說明) above
 for the same steps in Chinese).
 
-1. Double-click **`Run-FolderLink.bat`** (or right-click `FolderLink.ps1` →
-   *Run with PowerShell*). Accept the UAC prompt.
+1. Double-click **`FolderLink.exe`**. Accept the UAC prompt.
 2. **來源資料夾 (Source folder)** — Browse to the folder whose *contents*
    you want to move.
 3. **目的資料夾 (Destination folder)** — Browse to where the files should
@@ -64,14 +70,15 @@ existing desktop shortcuts, saved paths in other apps, etc. keep working.
 
 ## How it works
 
-Under the hood the tool runs:
+Under the hood the app runs:
 
 ```
-robocopy "<source>" "<destination>" /MOVE /E /IS /R:5 /W:5 /XJ /MT:8
+robocopy "<source>" "<destination>" /MOVE /E /IS /R:5 /W:5 /XJ /MT:8 /UNICODE
 ```
 
 then, once everything copied cleanly, deletes the now-empty source folder
-and recreates it as a symbolic link pointing at the destination.
+and recreates it as a symbolic link (via .NET's
+`Directory.CreateSymbolicLink`) pointing at the destination.
 
 ## Scenarios it handles
 
@@ -100,6 +107,9 @@ and recreates it as a symbolic link pointing at the destination.
   you're never left with a half-empty, half-linked folder.
 - **App closed mid-transfer** — you're asked to confirm; confirming kills
   the copy safely, same guarantees as Cancel.
+- **Non-ASCII (e.g. Chinese) file and folder names** — robocopy is run
+  with `/UNICODE` and its output is decoded as UTF-16, so names don't get
+  garbled in the log regardless of the system's default codepage.
 - **Link creation fails after a successful move** (e.g. a stray
   permissions issue) — the files are safely at the destination; the tool
   tells you and gives you the manual `mklink` command to finish the last
@@ -107,35 +117,34 @@ and recreates it as a symbolic link pointing at the destination.
 
 ## Logs
 
-Each run writes robocopy's raw output to
-`%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.out.log` (and a
-`.err.log` for anything sent to stderr). Use **開啟記錄資料夾 (Open Log
-Folder)** in the app to jump there — handy if you need to see exactly
-which files failed.
+Each run writes robocopy's output to
+`%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.log`. Use **開啟記錄
+資料夾 (Open Log Folder)** in the app to jump there — handy if you need to
+see exactly which files failed.
 
 ## Windows warned me this might be dangerous — is it?
 
 If SmartScreen or Microsoft Defender flags this the first time you run it,
 that's expected for **any** new, unsigned tool from a small publisher —
 Windows scores files partly by how many people have already run them
-without incident, and a fresh script naturally starts at zero. It is not a
+without incident, and a fresh app naturally starts at zero. It is not a
 sign of an actual detected threat here. A few things that make that easy
 to check for yourself:
 
-- **The source is plain, readable PowerShell** — nothing obfuscated,
-  Base64-encoded, or downloaded and run at runtime. Open `FolderLink.ps1`
-  in Notepad and read it top to bottom; every action it can take is right
-  there.
 - **No network access at all.** It never calls out to the internet.
 - **No persistence.** It doesn't touch the registry Run keys, Scheduled
   Tasks, or the Startup folder — it only acts on the two folders you pick,
   while the window is open.
 - **Admin rights are used for exactly one thing**: creating the symbolic
   link at the end, which Windows requires elevation for.
+- **The full source is in this repo** (see [`src/FolderLink`](src/FolderLink))
+  and builds into exactly the file you downloaded — see
+  [Build it yourself](#build-it-yourself) if you'd rather compile it than
+  trust the prebuilt binary.
 
-If Windows SmartScreen blocks the `.bat` with "Windows protected your PC":
-click **More info**, then **Run anyway**. If Defender quarantines a file,
-you can restore it from Windows Security → Virus & threat protection →
+If Windows SmartScreen blocks it with "Windows protected your PC": click
+**More info**, then **Run anyway**. If Defender quarantines the file, you
+can restore it from Windows Security → Virus & threat protection →
 Protection history, or download it again after verifying the checksum
 below.
 
@@ -145,12 +154,33 @@ Compare the SHA-256 hash of what you downloaded against
 [`checksums.txt`](checksums.txt):
 
 ```powershell
-Get-FileHash .\FolderLink.ps1
-Get-FileHash .\Run-FolderLink.bat
+Get-FileHash .\FolderLink.exe
 ```
 
-If the hashes don't match the ones in `checksums.txt`, don't run the
-files — re-download them.
+If the hash doesn't match the one in `checksums.txt`, don't run the
+file — re-download it.
+
+## Build it yourself
+
+The app is plain C# / WinForms, in [`src/FolderLink`](src/FolderLink). If
+you have the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+installed (Windows, macOS, or Linux — it cross-compiles):
+
+```
+cd src/FolderLink
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+The resulting `FolderLink.exe` lands in `src/FolderLink/bin/Release/net8.0-windows/win-x64/publish/`.
+
+## Older PowerShell version
+
+An earlier version of this tool shipped as a `.ps1` script + `.bat`
+launcher instead of a compiled app. It's kept in
+[`legacy-script-version/`](legacy-script-version) for anyone who prefers
+an interpreted, directly-readable script over a compiled binary, but it's
+no longer the recommended way to get FolderLink — use `FolderLink.exe`
+above instead.
 
 ## Limitations
 
