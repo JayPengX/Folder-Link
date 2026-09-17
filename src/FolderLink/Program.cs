@@ -37,22 +37,25 @@ internal sealed class MainForm : Form
     private readonly TextBox _destBox;
     private readonly Button _startButton;
     private readonly Button _cancelButton;
-    private readonly Button _openLogButton;
     private readonly Label _statusLabel;
     private readonly ProgressBar _progressBar;
     private readonly TextBox _logBox;
 
-    private readonly string _logDir;
-    private readonly object _logLock = new();
-
     private Process? _roboProcess;
-    private StreamWriter? _logWriter;
     private string? _pendingSource;
     private string? _pendingDest;
 
     public MainForm()
     {
         Text = "FolderLink — 搬移資料夾並保留原路徑捷徑";
+        // This form is laid out with fixed pixel coordinates rather than a
+        // designer, so it needs AutoScaleMode.Dpi (not the Form default of
+        // Font) — otherwise WinForms' font-based autoscale rescales every
+        // hardcoded Location/Size against an implicit baseline font, which
+        // can push the last control (the Browse button) outside the client
+        // area. Dpi mode is also the correct pairing with the PerMonitorV2
+        // awareness already set in Program.Main.
+        AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(680, 470);
         MinimumSize = new Size(600, 380);
         StartPosition = FormStartPosition.CenterScreen;
@@ -130,15 +133,6 @@ internal sealed class MainForm : Form
         };
         _cancelButton.Click += (_, _) => CancelTransfer();
 
-        _openLogButton = new Button
-        {
-            Text = "開啟記錄資料夾",
-            Location = new Point(margin + 240, 95),
-            Size = new Size(150, 34),
-        };
-        _openLogButton.Click += (_, _) =>
-            Process.Start(new ProcessStartInfo { FileName = _logDir, UseShellExecute = true });
-
         _statusLabel = new Label
         {
             Text = "狀態：閒置",
@@ -169,26 +163,17 @@ internal sealed class MainForm : Form
         {
             sourceLabel, _sourceBox, sourceBrowse,
             destLabel, _destBox, destBrowse,
-            _startButton, _cancelButton, _openLogButton,
+            _startButton, _cancelButton,
             _statusLabel, _progressBar, _logBox,
         });
 
         FormClosing += OnFormClosing;
-
-        _logDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FolderLink", "Logs");
-        Directory.CreateDirectory(_logDir);
     }
 
     private void SetStatus(string text) => _statusLabel.Text = $"狀態：{text}";
 
     private void LogLine(string text)
     {
-        lock (_logLock)
-        {
-            _logWriter?.WriteLine(text);
-        }
         if (IsHandleCreated)
         {
             BeginInvoke(() => _logBox.AppendText(text + Environment.NewLine));
@@ -224,21 +209,15 @@ internal sealed class MainForm : Form
             "確認搬移", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
         if (confirm != DialogResult.Yes) return;
 
-        Directory.CreateDirectory(destination);
+        // No need to pre-create the destination here: the folder-browse
+        // dialog above already lets the user create a new folder natively,
+        // and robocopy itself creates any missing destination path when it
+        // copies.
 
         _pendingSource = source;
         _pendingDest = destination;
 
-        var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var logPath = Path.Combine(_logDir, $"transfer_{stamp}.log");
-
         _logBox.Clear();
-        lock (_logLock)
-        {
-            _logWriter?.Dispose();
-            _logWriter = new StreamWriter(logPath, append: false, Encoding.UTF8) { AutoFlush = true };
-        }
-
         LogLine($"搬移中：\n  來源：{source}\n  目的：{destination}\n");
         SetStatus("正在複製檔案...");
         SetBusy(true);
@@ -407,6 +386,5 @@ internal sealed class MainForm : Form
             try { _roboProcess.Kill(entireProcessTree: true); }
             catch { /* already exiting */ }
         }
-        lock (_logLock) { _logWriter?.Dispose(); }
     }
 }

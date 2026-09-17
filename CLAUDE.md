@@ -153,6 +153,41 @@ not a substitute for a real Windows run if you ever get one.
    Fix: check `Directory.Exists(source)` first; a missing source directory
    is now treated as the (expected) success case rather than an error.
 
+## UI cleanup from direct user feedback
+
+1. **The Browse button was getting cut off.** `MainForm` lays itself out
+   with hardcoded pixel `Location`/`Size` values rather than a designer,
+   but never set `AutoScaleMode`, so it fell back to the `Form` default of
+   `AutoScaleMode.Font`. That mode rescales every control's hardcoded
+   coordinates against an implicit baseline font at runtime, and since the
+   form sets a non-default `Font` ("Microsoft JhengHei UI" 9pt) before
+   adding controls, this could inflate every position/size enough to push
+   the last (rightmost) control — the Browse button next to the
+   destination field — outside the client area. Fixed by setting
+   `AutoScaleMode = AutoScaleMode.Dpi`, which is also the documented
+   correct pairing with `Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)`
+   already set in `Program.Main` for a form laid out in fixed pixels. This
+   couldn't be visually verified (no Windows access — see the top of this
+   file), so if the button is still misplaced after this fix, look at
+   actual runtime DPI/scale factor next, not the autoscale mode itself.
+2. **Logs are no longer written to disk.** The app used to write each
+   run's robocopy output to `%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.log`
+   and had an "開啟記錄資料夾" (Open Log Folder) button to jump there. The
+   user considered this unwanted disk clutter, so both the file writing
+   (`_logWriter`/`StreamWriter`/`_logDir`) and the button were removed.
+   The on-screen log textbox in the main window is unaffected — it still
+   shows the same live output during a run, it just isn't persisted
+   anywhere once the app closes. README.md's old "## Logs" section
+   (describing the log file path) was removed too.
+3. **Dropped the redundant `Directory.CreateDirectory(destination)`
+   call** in `StartTransfer`. It's unnecessary on two counts: the
+   destination `FolderBrowserDialog` already has a native "Make New
+   Folder" button, and robocopy itself creates any destination path
+   that doesn't exist yet when it copies. (Note: `TransferSafety.TestPreFlight`
+   never required the destination to pre-exist, so this doesn't change
+   what preflight allows — it only removes a step that was doing nothing
+   robocopy wasn't already going to do.)
+
 ## Git/repo constraints discovered this session
 
 - This session's push credentials are scoped to **one branch**

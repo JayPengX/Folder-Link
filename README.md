@@ -107,20 +107,14 @@ and recreates it as a symbolic link (via .NET's
   you're never left with a half-empty, half-linked folder.
 - **App closed mid-transfer** — you're asked to confirm; confirming kills
   the copy safely, same guarantees as Cancel.
-- **Non-ASCII (e.g. Chinese) file and folder names** — robocopy is run
-  with `/UNICODE` and its output is decoded as UTF-16, so names don't get
-  garbled in the log regardless of the system's default codepage.
 - **Link creation fails after a successful move** (e.g. a stray
   permissions issue) — the files are safely at the destination; the tool
   tells you and gives you the manual `mklink` command to finish the last
   step yourself.
 
-## Logs
-
-Each run writes robocopy's output to
-`%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.log`. Use **開啟記錄
-資料夾 (Open Log Folder)** in the app to jump there — handy if you need to
-see exactly which files failed.
+The on-screen log at the bottom of the window shows robocopy's progress
+for the current run; it isn't saved to disk, so nothing is left behind
+once you close the app.
 
 ## Windows warned me this might be dangerous — is it?
 
