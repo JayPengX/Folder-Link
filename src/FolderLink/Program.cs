@@ -49,15 +49,18 @@ internal sealed class MainForm : Form
     {
         Text = "FolderLink — 搬移資料夾並保留原路徑捷徑";
         // This form is laid out with fixed pixel coordinates rather than a
-        // designer, so it needs AutoScaleMode.Dpi (not the Form default of
-        // Font) — otherwise WinForms' font-based autoscale rescales every
-        // hardcoded Location/Size against an implicit baseline font, which
-        // can push the last control (the Browse button) outside the client
-        // area. Dpi mode is also the correct pairing with the PerMonitorV2
-        // awareness already set in Program.Main.
+        // designer. AutoScaleMode.Dpi only actually scales anything if it
+        // has a recorded design-time baseline to scale from — without
+        // AutoScaleDimensions set, .NET has no baseline and Dpi mode is a
+        // silent no-op, leaving every hardcoded Location/Size exactly as
+        // written regardless of the monitor's real DPI. 96,96 is the
+        // standard "designed at 100%" baseline (matches the app.manifest's
+        // PerMonitorV2 declaration), so this is what actually makes the
+        // whole form + controls grow together on a scaled display.
+        AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(680, 470);
-        MinimumSize = new Size(600, 380);
+        ClientSize = new Size(720, 470);
+        MinimumSize = new Size(640, 380);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Microsoft JhengHei UI", 9F);
 
@@ -81,7 +84,14 @@ internal sealed class MainForm : Form
         {
             Text = "瀏覽...",
             Location = new Point(margin + labelWidth + boxWidth + 10, 17),
-            Size = new Size(90, 24),
+            // AutoSize+GrowOnly means the button always grows to fit its
+            // own label text (measured with the actual runtime font/DPI),
+            // instead of relying on a fixed pixel width that could clip
+            // the text under a different font substitution or display
+            // scale than assumed here.
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowOnly,
+            MinimumSize = new Size(90, 24),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         sourceBrowse.Click += (_, _) =>
@@ -106,7 +116,9 @@ internal sealed class MainForm : Form
         {
             Text = "瀏覽...",
             Location = new Point(margin + labelWidth + boxWidth + 10, 52),
-            Size = new Size(90, 24),
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowOnly,
+            MinimumSize = new Size(90, 24),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         destBrowse.Click += (_, _) =>
@@ -119,7 +131,9 @@ internal sealed class MainForm : Form
         {
             Text = "開始搬移",
             Location = new Point(margin, 95),
-            Size = new Size(120, 34),
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowOnly,
+            MinimumSize = new Size(120, 34),
             Font = new Font("Microsoft JhengHei UI", 9F, FontStyle.Bold),
         };
         _startButton.Click += (_, _) => StartTransfer(_sourceBox.Text.Trim(), _destBox.Text.Trim());
@@ -128,7 +142,9 @@ internal sealed class MainForm : Form
         {
             Text = "取消",
             Location = new Point(margin + 130, 95),
-            Size = new Size(100, 34),
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowOnly,
+            MinimumSize = new Size(100, 34),
             Enabled = false,
         };
         _cancelButton.Click += (_, _) => CancelTransfer();
@@ -137,14 +153,14 @@ internal sealed class MainForm : Form
         {
             Text = "狀態：閒置",
             Location = new Point(margin, 138),
-            Size = new Size(620, 20),
+            Size = new Size(660, 20),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
         };
 
         _progressBar = new ProgressBar
         {
             Location = new Point(margin, 160),
-            Size = new Size(645, 18),
+            Size = new Size(690, 18),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
         };
 
@@ -155,7 +171,7 @@ internal sealed class MainForm : Form
             ReadOnly = true,
             Font = new Font("Consolas", 9F),
             Location = new Point(margin, 185),
-            Size = new Size(645, 250),
+            Size = new Size(690, 250),
             Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
         };
 

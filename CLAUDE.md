@@ -155,21 +155,38 @@ not a substitute for a real Windows run if you ever get one.
 
 ## UI cleanup from direct user feedback
 
-1. **The Browse button was getting cut off.** `MainForm` lays itself out
-   with hardcoded pixel `Location`/`Size` values rather than a designer,
-   but never set `AutoScaleMode`, so it fell back to the `Form` default of
-   `AutoScaleMode.Font`. That mode rescales every control's hardcoded
-   coordinates against an implicit baseline font at runtime, and since the
-   form sets a non-default `Font` ("Microsoft JhengHei UI" 9pt) before
-   adding controls, this could inflate every position/size enough to push
-   the last (rightmost) control — the Browse button next to the
-   destination field — outside the client area. Fixed by setting
-   `AutoScaleMode = AutoScaleMode.Dpi`, which is also the documented
-   correct pairing with `Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)`
-   already set in `Program.Main` for a form laid out in fixed pixels. This
-   couldn't be visually verified (no Windows access — see the top of this
-   file), so if the button is still misplaced after this fix, look at
-   actual runtime DPI/scale factor next, not the autoscale mode itself.
+1. **The Browse button was getting cut off — two attempts.** `MainForm`
+   lays itself out with hardcoded pixel `Location`/`Size` values rather
+   than a designer.
+   - First attempt: set `AutoScaleMode = AutoScaleMode.Dpi` alone, on the
+     theory that the `Form` default (`AutoScaleMode.Font`) was inflating
+     hardcoded coordinates against an implicit baseline font. The user
+     reported the button **still cut off** after this shipped — which is
+     itself informative: `AutoScaleMode.Dpi` only actually rescales
+     anything if `AutoScaleDimensions` gives it a design-time baseline to
+     compare the runtime DPI against; left unset (as it was), Dpi mode has
+     no baseline and silently no-ops, so that first fix likely changed
+     nothing. This means the original bug was probably never really an
+     autoscale-inflation problem in the first place.
+   - Second attempt (current): set `AutoScaleDimensions = new SizeF(96F, 96F)`
+     alongside `AutoScaleMode.Dpi`, so Dpi scaling actually engages against
+     a real "designed at 100%" baseline consistent with the
+     `PerMonitorV2` declaration in `app.manifest`/`Program.Main`. Also
+     switched all four buttons to `AutoSize = true` +
+     `AutoSizeMode.GrowOnly` with a `MinimumSize` floor, so a button
+     always grows to fit its own label as actually measured by the
+     runtime font/GDI+ renderer, rather than trusting a fixed pixel width
+     guessed at design time — this is the more bulletproof half of the
+     fix, since it stops depending on getting DPI-scale math exactly
+     right. Widened `ClientSize` (680→720) and the trailing rows to match,
+     for extra margin.
+   - None of this has been visually verified (no Windows access — see the
+     top of this file). If it's *still* cut off after this, that's strong
+     evidence the cause isn't autoscale/sizing at all — suspect something
+     more fundamental, e.g. "Microsoft JhengHei UI" not being present on
+     the user's system (triggering an unpredictable font substitution) or
+     a screenshot/description mismatch — ask the user for an actual
+     screenshot before guessing at a third layout tweak.
 2. **Logs are no longer written to disk.** The app used to write each
    run's robocopy output to `%LOCALAPPDATA%\FolderLink\Logs\transfer_<timestamp>.log`
    and had an "開啟記錄資料夾" (Open Log Folder) button to jump there. The
