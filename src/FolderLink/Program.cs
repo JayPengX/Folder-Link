@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
@@ -7,14 +8,27 @@ namespace FolderLinkApp;
 
 internal static class Program
 {
+    [DllImport("kernel32.dll")]
+    private static extern int GetOEMCP();
+
     [STAThread]
     private static void Main()
     {
+        // robocopy's banner/summary text (and the Source:/Dest:/Files:/Options:
+        // lines in it) is always written in the console OEM codepage, even
+        // when /UNICODE is passed — /UNICODE only affects per-file/per-dir
+        // listing lines. .NET's built-in encodings don't include legacy OEM
+        // codepages (e.g. 950/Big5 on a Traditional Chinese system), so this
+        // provider is needed for Encoding.GetEncoding(GetOEMCP()) to work.
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.Run(new MainForm());
     }
+
+    internal static Encoding OemEncoding => Encoding.GetEncoding(GetOEMCP());
 }
 
 internal sealed class MainForm : Form
@@ -236,11 +250,15 @@ internal sealed class MainForm : Form
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            // /UNICODE makes robocopy emit UTF-16LE, so file/folder names in
-            // Chinese (or any non-ASCII script) come through correctly
-            // regardless of the system's OEM codepage.
-            StandardOutputEncoding = Encoding.Unicode,
-            StandardErrorEncoding = Encoding.Unicode,
+            // We pass /NFL /NDL below, so robocopy never prints a per-file or
+            // per-dir listing line — the only content it ever emits is the
+            // banner/summary, which robocopy always writes in the OEM
+            // codepage (this is true even with /UNICODE — that switch only
+            // affects the per-file/per-dir lines we've suppressed). Decoding
+            // it as UTF-16 instead corrupts every line, including the
+            // Chinese source/dest paths in the "Source :"/"Dest :" lines.
+            StandardOutputEncoding = Program.OemEncoding,
+            StandardErrorEncoding = Program.OemEncoding,
         };
         // /MOVE   move files & dirs, delete from source once copied
         // /E      include subfolders, including empty ones
@@ -248,12 +266,12 @@ internal sealed class MainForm : Form
         // /R:5 /W:5   retry a locked/in-use file 5 times, 5 seconds apart, then move on
         // /XJ     do not follow junctions/symlinks found inside the source (avoids loops/duplication)
         // /MT:8   copy up to 8 files in parallel
-        // /UNICODE   emit UTF-16LE output (see StandardOutputEncoding above)
-        // /NFL /NDL /NP   quieter, more readable log output
+        // /NFL /NDL /NP   quieter, more readable log output (also: keeps robocopy's whole
+        //                 output in the OEM codepage — see StandardOutputEncoding above)
         foreach (var arg in new[]
                  {
                      source, destination,
-                     "/MOVE", "/E", "/IS", "/R:5", "/W:5", "/XJ", "/MT:8", "/UNICODE", "/NFL", "/NDL", "/NP",
+                     "/MOVE", "/E", "/IS", "/R:5", "/W:5", "/XJ", "/MT:8", "/NFL", "/NDL", "/NP",
                  })
         {
             psi.ArgumentList.Add(arg);
@@ -310,10 +328,17 @@ internal sealed class MainForm : Form
 
         try
         {
+            // robocopy /MOVE deletes source directories once they're fully
+            // emptied out, including the root source folder itself — so it
+            // being gone entirely is the expected success case, not a
+            // failure to verify. Only a real enumeration error (e.g. a
+            // permissions problem on a source folder that still exists)
+            // should block the symlink for safety.
             bool hasLeftover;
             try
             {
-                hasLeftover = Directory.EnumerateFileSystemEntries(source, "*", SearchOption.AllDirectories).Any();
+                hasLeftover = Directory.Exists(source)
+                    && Directory.EnumerateFileSystemEntries(source, "*", SearchOption.AllDirectories).Any();
             }
             catch (Exception ex)
             {
@@ -333,7 +358,8 @@ internal sealed class MainForm : Form
                 return;
             }
 
-            Directory.Delete(source, recursive: true);
+            if (Directory.Exists(source))
+                Directory.Delete(source, recursive: true);
             Directory.CreateSymbolicLink(source, destination);
             LogLine($"捷徑已建立：\n  {source}  -->  {destination}");
             SetStatus("完成");

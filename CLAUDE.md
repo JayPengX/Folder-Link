@@ -110,6 +110,49 @@ and the hash *doesn't* change.
   introduce a seam (an injectable size/free-space provider) rather than
   calling `DriveInfo` directly.
 
+## Two real bugs found from a user's pasted log (fixed by reading code, not by running it)
+
+A user pasted the app's own log output from a real run, and it showed two
+distinct bugs in `src/FolderLink/Program.cs` `CompleteTransfer`/`StartTransfer`.
+Both were diagnosed and fixed purely by reading code and decoding the log
+bytes by hand — this is a good example of the "reviewed by reading, not by
+execution" caveat above actually paying off, but also a reminder that it's
+not a substitute for a real Windows run if you ever get one.
+
+1. **The earlier claim in this file that `/UNICODE` fixed robocopy's
+   Chinese-filename encoding was incomplete.** `/UNICODE` only affects
+   robocopy's per-file/per-dir *listing* lines. Its banner and summary
+   block (`ROBOCOPY :: Robust File Copy for Windows`, the `Source :` /
+   `Dest :` / `Options :` lines, the final totals table) are **always**
+   written in the OEM codepage, regardless of `/UNICODE`. This app passes
+   `/NFL /NDL`, so it never prints the per-file/per-dir lines that
+   `/UNICODE` actually affects — meaning 100% of what robocopy ever wrote
+   to this app's log was OEM-codepage text being force-decoded as UTF-16,
+   producing garbage (confirmed by hand-decoding a pasted log: the
+   mojibake was byte-for-byte "ROBOCOPY" etc. misread as UTF-16LE pairs).
+   Fix: dropped `/UNICODE` entirely (no benefit left once `/NFL /NDL` are
+   present) and switched `StandardOutputEncoding`/`StandardErrorEncoding`
+   to the real OEM codepage via P/Invoke `GetOEMCP()` +
+   `Encoding.GetEncoding(...)`, which needs the `System.Text.Encoding.CodePages`
+   package (`CodePagesEncodingProvider`) registered in `Main()` since .NET's
+   built-in encodings don't include legacy codepages like 950 (Traditional
+   Chinese Big5). If a future change starts passing robocopy without
+   `/NFL /NDL` (to get a real file list in the log), this whole approach
+   needs revisiting — a single fixed encoding can't correctly decode a
+   stream that mixes OEM banner text with UTF-16 file-list lines.
+2. **A successful move could get stuck refusing to create the symlink.**
+   `robocopy /MOVE` deletes source directories once they're fully emptied
+   out — including the root source folder itself once everything's been
+   moved out of it. The finalize step tried to `Directory.EnumerateFileSystemEntries(source, ...)`
+   to confirm the source was empty before deleting it and creating the
+   symlink, and treated *any* exception (including the expected
+   `DirectoryNotFoundException` when robocopy had already removed the
+   whole folder) as "can't confirm safety, don't link" — so a fully
+   successful, fully-moved transfer could end with the files correctly at
+   the destination but no symlink, and a "please check manually" message.
+   Fix: check `Directory.Exists(source)` first; a missing source directory
+   is now treated as the (expected) success case rather than an error.
+
 ## Git/repo constraints discovered this session
 
 - This session's push credentials are scoped to **one branch**

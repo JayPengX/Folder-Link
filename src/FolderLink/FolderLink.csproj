@@ -23,6 +23,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Needed for Encoding.GetEncoding(<OEM codepage>) — .NET's built-in
+         encodings don't include legacy codepages like 950 (Traditional
+         Chinese Big5), which robocopy's banner/summary output uses. -->
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FolderLink.Core\FolderLink.Core.csproj" />
   </ItemGroup>
 
