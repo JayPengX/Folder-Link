@@ -27,12 +27,16 @@ location keeps working. This is the same idea as the classic
 `robocopy /move` + `mklink` combo, wrapped in a single-file app so you
 don't have to type paths in `cmd`.
 
-**The application's own interface is entirely in Traditional Chinese** —
-that's a deliberate, permanent property of the shipped app, not a
-documentation gap. This README is written in English, but wherever it
-references an on-screen button or field, it gives the Chinese label
-alongside its English translation (e.g. "Start Transfer (開始搬移)") so
-you can match what's written here to what you actually see on screen.
+**The application's own interface supports both Traditional Chinese and
+English.** It picks its displayed language automatically from your
+Windows OS display-language setting at startup (a Traditional-Chinese
+Windows install shows Chinese; anything else — including English
+Windows — shows English), with no setting to change by hand yet. This
+README is written in English, but wherever it references an on-screen
+button or field, it gives the Chinese label alongside its English
+translation (e.g. "Start Transfer (開始搬移)") so you can match what's
+written here to what you actually see on screen regardless of which
+language your copy is showing.
 
 ## Download
 

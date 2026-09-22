@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace FolderLinkApp;
@@ -22,6 +24,39 @@ internal static class Program
         // provider is needed for Encoding.GetEncoding(GetOEMCP()) to work.
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+        // Pick the initial displayed language from the Windows OS display
+        // language, not the process's launch-time default culture.
+        // CultureInfo.InstalledUICulture reflects the OS UI language
+        // setting itself (Control Panel > Language > "Windows display
+        // language" / the underlying LOCALE_SYSTEM_DEFAULT UI language),
+        // which is what we want here — as opposed to CurrentUICulture,
+        // which can be overridden per-user/per-process (e.g. by a
+        // "regional format" override, or by whoever launches the process)
+        // and would make this behave differently for the same OS
+        // depending on how the app happens to be started.
+        //
+        // Traditional-Chinese-flavored cultures (zh-TW, zh-Hant, zh-HK,
+        // zh-MO, ...) all report "zh" as their two-letter ISO language
+        // name, so checking that alone (rather than an exact "zh-TW"
+        // match) is what makes any of them resolve to the zh-TW
+        // satellite via .NET's normal neutral/specific resource fallback.
+        // Everything else — English systems, and any other/unsupported
+        // language — falls back to the neutral resource set, which is
+        // English (Strings.resx with no culture suffix).
+        //
+        // Behavior change: this used to be unconditionally Traditional
+        // Chinese. A non-English, non-Chinese Windows install now sees
+        // English instead of the old always-Chinese default.
+        var installedUiCulture = CultureInfo.InstalledUICulture;
+        var resolvedCulture = installedUiCulture.TwoLetterISOLanguageName == "zh"
+            ? installedUiCulture
+            : CultureInfo.GetCultureInfo("en");
+        Thread.CurrentThread.CurrentUICulture = resolvedCulture;
+        // Also set the default for any other thread .NET creates for us
+        // (e.g. thread-pool callbacks), so resource lookups stay
+        // consistent even off the main UI thread.
+        CultureInfo.DefaultThreadCurrentUICulture = resolvedCulture;
+
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
@@ -29,6 +64,16 @@ internal static class Program
     }
 
     internal static Encoding OemEncoding => Encoding.GetEncoding(GetOEMCP());
+
+    // "Microsoft JhengHei UI" is a Traditional-Chinese-specific font; it
+    // renders Latin text fine but isn't designed for it. Use it only when
+    // we've actually resolved to the zh-TW UI, and fall back to "Segoe UI"
+    // (the standard Windows UI font, present on every supported Windows
+    // version) otherwise.
+    internal static string UiFontFamily =>
+        Thread.CurrentThread.CurrentUICulture.TwoLetterISOLanguageName == "zh"
+            ? "Microsoft JhengHei UI"
+            : "Segoe UI";
 }
 
 internal sealed class MainForm : Form
@@ -47,7 +92,7 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "FolderLink — 搬移資料夾並保留原路徑捷徑";
+        Text = Strings.FormTitle;
         // This form is laid out with fixed pixel coordinates rather than a
         // designer. AutoScaleMode.Dpi only actually scales anything if it
         // has a recorded design-time baseline to scale from — without
@@ -62,7 +107,7 @@ internal sealed class MainForm : Form
         ClientSize = new Size(720, 470);
         MinimumSize = new Size(640, 380);
         StartPosition = FormStartPosition.CenterScreen;
-        Font = new Font("Microsoft JhengHei UI", 9F);
+        Font = new Font(Program.UiFontFamily, 9F);
 
         const int margin = 15;
         const int labelWidth = 110;
@@ -70,7 +115,7 @@ internal sealed class MainForm : Form
 
         var sourceLabel = new Label
         {
-            Text = "來源資料夾：",
+            Text = Strings.SourceFolderLabel,
             Location = new Point(margin, 20),
             Size = new Size(labelWidth, 20),
         };
@@ -82,7 +127,7 @@ internal sealed class MainForm : Form
         };
         var sourceBrowse = new Button
         {
-            Text = "瀏覽...",
+            Text = Strings.BrowseButton,
             Location = new Point(margin + labelWidth + boxWidth + 10, 17),
             // AutoSize+GrowOnly means the button always grows to fit its
             // own label text (measured with the actual runtime font/DPI),
@@ -96,13 +141,13 @@ internal sealed class MainForm : Form
         };
         sourceBrowse.Click += (_, _) =>
         {
-            using var dlg = new FolderBrowserDialog { Description = "請選擇要搬移檔案的來源資料夾" };
+            using var dlg = new FolderBrowserDialog { Description = Strings.SourceBrowseDialogDescription };
             if (dlg.ShowDialog(this) == DialogResult.OK) _sourceBox.Text = dlg.SelectedPath;
         };
 
         var destLabel = new Label
         {
-            Text = "目的資料夾：",
+            Text = Strings.DestFolderLabel,
             Location = new Point(margin, 55),
             Size = new Size(labelWidth, 20),
         };
@@ -114,7 +159,7 @@ internal sealed class MainForm : Form
         };
         var destBrowse = new Button
         {
-            Text = "瀏覽...",
+            Text = Strings.BrowseButton,
             Location = new Point(margin + labelWidth + boxWidth + 10, 52),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowOnly,
@@ -123,24 +168,24 @@ internal sealed class MainForm : Form
         };
         destBrowse.Click += (_, _) =>
         {
-            using var dlg = new FolderBrowserDialog { Description = "請選擇（或建立）目的資料夾" };
+            using var dlg = new FolderBrowserDialog { Description = Strings.DestBrowseDialogDescription };
             if (dlg.ShowDialog(this) == DialogResult.OK) _destBox.Text = dlg.SelectedPath;
         };
 
         _startButton = new Button
         {
-            Text = "開始搬移",
+            Text = Strings.StartButton,
             Location = new Point(margin, 95),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowOnly,
             MinimumSize = new Size(120, 34),
-            Font = new Font("Microsoft JhengHei UI", 9F, FontStyle.Bold),
+            Font = new Font(Program.UiFontFamily, 9F, FontStyle.Bold),
         };
         _startButton.Click += (_, _) => StartTransfer(_sourceBox.Text.Trim(), _destBox.Text.Trim());
 
         _cancelButton = new Button
         {
-            Text = "取消",
+            Text = Strings.CancelButton,
             Location = new Point(margin + 130, 95),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowOnly,
@@ -151,7 +196,7 @@ internal sealed class MainForm : Form
 
         _statusLabel = new Label
         {
-            Text = "狀態：閒置",
+            Text = string.Format(Strings.StatusFormat, Strings.StatusIdle),
             Location = new Point(margin, 138),
             Size = new Size(660, 20),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
@@ -186,7 +231,7 @@ internal sealed class MainForm : Form
         FormClosing += OnFormClosing;
     }
 
-    private void SetStatus(string text) => _statusLabel.Text = $"狀態：{text}";
+    private void SetStatus(string text) => _statusLabel.Text = string.Format(Strings.StatusFormat, text);
 
     private void LogLine(string text)
     {
@@ -221,8 +266,8 @@ internal sealed class MainForm : Form
 
         var confirm = MessageBox.Show(
             this,
-            $"此操作將會把下列位置的所有檔案與子資料夾：\n{source}\n\n搬移到：\n{destination}\n\n並將原始資料夾替換成指向新位置的符號連結。\n\n是否要繼續？",
-            "確認搬移", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            string.Format(Strings.ConfirmMoveBody, source, destination),
+            Strings.ConfirmMoveTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
         if (confirm != DialogResult.Yes) return;
 
         // No need to pre-create the destination here: the folder-browse
@@ -234,8 +279,8 @@ internal sealed class MainForm : Form
         _pendingDest = destination;
 
         _logBox.Clear();
-        LogLine($"搬移中：\n  來源：{source}\n  目的：{destination}\n");
-        SetStatus("正在複製檔案...");
+        LogLine(string.Format(Strings.LogTransferStarting, source, destination));
+        SetStatus(Strings.StatusCopying);
         SetBusy(true);
 
         var psi = new ProcessStartInfo
@@ -289,8 +334,8 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            LogLine($"無法啟動 robocopy：{ex.Message}");
-            SetStatus("啟動失敗");
+            LogLine(string.Format(Strings.LogRoboStartFailed, ex.Message));
+            SetStatus(Strings.StatusStartFailed);
             SetBusy(false);
         }
     }
@@ -305,21 +350,21 @@ internal sealed class MainForm : Form
 
         if (exitCode >= 8)
         {
-            LogLine($"\nRobocopy 回報發生錯誤（結束代碼：{exitCode}）。");
-            LogLine("部分檔案可能正被使用中（鎖定），重試多次後仍無法搬移。");
-            LogLine("已成功複製的檔案，已從來源資料夾中移除。");
-            LogLine("請先關閉正在使用剩餘檔案的程式，再按一次「開始搬移」— 已搬移的檔案不會重複處理。");
-            SetStatus("已完成但發生錯誤 — 請查看記錄");
+            LogLine(string.Format(Strings.LogRoboError, exitCode));
+            LogLine(Strings.LogRoboErrorLocked);
+            LogLine(Strings.LogRoboErrorAlreadyMoved);
+            LogLine(Strings.LogRoboErrorRetryHint);
+            SetStatus(Strings.StatusCompletedWithErrors);
             SetBusy(false);
             MessageBox.Show(
                 this,
-                "部分檔案因正在使用中而無法搬移。\n\n請關閉使用這些檔案的程式，然後重新執行搬移 — 已搬移的檔案不會重複處理。\n\n原始資料夾將維持不變（尚未建立捷徑），因此不會遺失任何檔案。",
+                Strings.ErrorSomeFilesInUseBody,
                 "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
-        LogLine("\n所有檔案皆已成功複製，正在完成最後步驟...");
-        SetStatus("正在完成最後步驟...");
+        LogLine(Strings.LogAllFilesCopied);
+        SetStatus(Strings.StatusFinishingUp);
 
         try
         {
@@ -337,18 +382,18 @@ internal sealed class MainForm : Form
             }
             catch (Exception ex)
             {
-                LogLine($"警告：無法確認來源資料夾是否已清空（{ex.Message}），為安全起見不會建立捷徑。");
-                SetStatus("已完成但需要人工確認 — 請查看記錄");
+                LogLine(string.Format(Strings.LogCannotConfirmEmpty, ex.Message));
+                SetStatus(Strings.StatusCompletedNeedsManualCheck);
                 SetBusy(false);
                 return;
             }
 
             if (hasLeftover)
             {
-                LogLine("警告：來源資料夾中仍有殘留項目（將保留原資料夾，不建立捷徑）：");
+                LogLine(Strings.LogLeftoverWarning);
                 foreach (var entry in Directory.EnumerateFileSystemEntries(source, "*", SearchOption.AllDirectories))
                     LogLine($"  {entry}");
-                SetStatus("已完成但仍有殘留檔案 — 請查看記錄");
+                SetStatus(Strings.StatusCompletedLeftoverFiles);
                 SetBusy(false);
                 return;
             }
@@ -356,20 +401,20 @@ internal sealed class MainForm : Form
             if (Directory.Exists(source))
                 Directory.Delete(source, recursive: true);
             Directory.CreateSymbolicLink(source, destination);
-            LogLine($"捷徑已建立：\n  {source}  -->  {destination}");
-            SetStatus("完成");
+            LogLine(string.Format(Strings.LogSymlinkCreated, source, destination));
+            SetStatus(Strings.StatusCompleted);
             MessageBox.Show(
                 this,
-                $"搬移完成。\n\n所有檔案現在都位於：\n{destination}\n\n並已在原始位置建立符號連結，讓現有的捷徑能夠繼續正常運作。",
+                string.Format(Strings.CompletionBody, destination),
                 "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            LogLine($"完成最後步驟時發生錯誤：{ex.Message}");
-            SetStatus("收尾失敗 — 請查看記錄");
+            LogLine(string.Format(Strings.LogFinalizeError, ex.Message));
+            SetStatus(Strings.StatusFinalizeFailed);
             MessageBox.Show(
                 this,
-                $"檔案已搬移完成，但建立捷徑失敗：\n{ex.Message}\n\n您可以手動建立捷徑，例如：\nmklink /D \"{source}\" \"{destination}\"",
+                string.Format(Strings.FinalizeErrorBody, ex.Message, source, destination),
                 "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
@@ -382,8 +427,8 @@ internal sealed class MainForm : Form
         {
             try { _roboProcess.Kill(entireProcessTree: true); }
             catch { /* already exiting */ }
-            LogLine("\n使用者已取消操作。已複製的檔案已從來源移除；其餘未處理的檔案維持原狀，且尚未建立捷徑。");
-            SetStatus("已取消");
+            LogLine(Strings.LogCancelledByUser);
+            SetStatus(Strings.StatusCancelled);
         }
         SetBusy(false);
     }
@@ -392,7 +437,7 @@ internal sealed class MainForm : Form
     {
         if (_roboProcess is { HasExited: false })
         {
-            var r = MessageBox.Show(this, "搬移作業仍在進行中，確定要取消並離開嗎？", "FolderLink",
+            var r = MessageBox.Show(this, Strings.ClosingConfirmBody, "FolderLink",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (r != DialogResult.Yes)
             {

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema
+
+    Traditional Chinese satellite resource for FolderLinkApp.Strings.
+    Every value here is copied VERBATIM from the strings that used to be
+    hardcoded directly in Program.cs, so existing zh-TW behavior is
+    preserved exactly — this is not a fresh translation, it's the
+    original text moved into the resource pipeline.
+  -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="FormTitle" xml:space="preserve">
+    <value>FolderLink — 搬移資料夾並保留原路徑捷徑</value>
+  </data>
+  <data name="SourceFolderLabel" xml:space="preserve">
+    <value>來源資料夾：</value>
+  </data>
+  <data name="DestFolderLabel" xml:space="preserve">
+    <value>目的資料夾：</value>
+  </data>
+  <data name="BrowseButton" xml:space="preserve">
+    <value>瀏覽...</value>
+  </data>
+  <data name="StartButton" xml:space="preserve">
+    <value>開始搬移</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="SourceBrowseDialogDescription" xml:space="preserve">
+    <value>請選擇要搬移檔案的來源資料夾</value>
+  </data>
+  <data name="DestBrowseDialogDescription" xml:space="preserve">
+    <value>請選擇（或建立）目的資料夾</value>
+  </data>
+
+  <data name="StatusFormat" xml:space="preserve">
+    <value>狀態：{0}</value>
+  </data>
+  <data name="StatusIdle" xml:space="preserve">
+    <value>閒置</value>
+  </data>
+  <data name="StatusCopying" xml:space="preserve">
+    <value>正在複製檔案...</value>
+  </data>
+  <data name="StatusStartFailed" xml:space="preserve">
+    <value>啟動失敗</value>
+  </data>
+  <data name="StatusFinishingUp" xml:space="preserve">
+    <value>正在完成最後步驟...</value>
+  </data>
+  <data name="StatusCompletedWithErrors" xml:space="preserve">
+    <value>已完成但發生錯誤 — 請查看記錄</value>
+  </data>
+  <data name="StatusCompletedNeedsManualCheck" xml:space="preserve">
+    <value>已完成但需要人工確認 — 請查看記錄</value>
+  </data>
+  <data name="StatusCompletedLeftoverFiles" xml:space="preserve">
+    <value>已完成但仍有殘留檔案 — 請查看記錄</value>
+  </data>
+  <data name="StatusCompleted" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="StatusFinalizeFailed" xml:space="preserve">
+    <value>收尾失敗 — 請查看記錄</value>
+  </data>
+  <data name="StatusCancelled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+
+  <data name="ConfirmMoveTitle" xml:space="preserve">
+    <value>確認搬移</value>
+  </data>
+  <data name="ConfirmMoveBody" xml:space="preserve">
+    <value>此操作將會把下列位置的所有檔案與子資料夾：
+{0}
+
+搬移到：
+{1}
+
+並將原始資料夾替換成指向新位置的符號連結。
+
+是否要繼續？</value>
+  </data>
+
+  <data name="LogTransferStarting" xml:space="preserve">
+    <value>搬移中：
+  來源：{0}
+  目的：{1}
+</value>
+  </data>
+  <data name="LogRoboStartFailed" xml:space="preserve">
+    <value>無法啟動 robocopy：{0}</value>
+  </data>
+  <data name="LogRoboError" xml:space="preserve">
+    <value>
+Robocopy 回報發生錯誤（結束代碼：{0}）。</value>
+  </data>
+  <data name="LogRoboErrorLocked" xml:space="preserve">
+    <value>部分檔案可能正被使用中（鎖定），重試多次後仍無法搬移。</value>
+  </data>
+  <data name="LogRoboErrorAlreadyMoved" xml:space="preserve">
+    <value>已成功複製的檔案，已從來源資料夾中移除。</value>
+  </data>
+  <data name="LogRoboErrorRetryHint" xml:space="preserve">
+    <value>請先關閉正在使用剩餘檔案的程式，再按一次「開始搬移」— 已搬移的檔案不會重複處理。</value>
+  </data>
+  <data name="ErrorSomeFilesInUseBody" xml:space="preserve">
+    <value>部分檔案因正在使用中而無法搬移。
+
+請關閉使用這些檔案的程式，然後重新執行搬移 — 已搬移的檔案不會重複處理。
+
+原始資料夾將維持不變（尚未建立捷徑），因此不會遺失任何檔案。</value>
+  </data>
+
+  <data name="LogAllFilesCopied" xml:space="preserve">
+    <value>
+所有檔案皆已成功複製，正在完成最後步驟...</value>
+  </data>
+  <data name="LogCannotConfirmEmpty" xml:space="preserve">
+    <value>警告：無法確認來源資料夾是否已清空（{0}），為安全起見不會建立捷徑。</value>
+  </data>
+  <data name="LogLeftoverWarning" xml:space="preserve">
+    <value>警告：來源資料夾中仍有殘留項目（將保留原資料夾，不建立捷徑）：</value>
+  </data>
+  <data name="LogSymlinkCreated" xml:space="preserve">
+    <value>捷徑已建立：
+  {0}  --&gt;  {1}</value>
+  </data>
+  <data name="CompletionBody" xml:space="preserve">
+    <value>搬移完成。
+
+所有檔案現在都位於：
+{0}
+
+並已在原始位置建立符號連結，讓現有的捷徑能夠繼續正常運作。</value>
+  </data>
+  <data name="LogFinalizeError" xml:space="preserve">
+    <value>完成最後步驟時發生錯誤：{0}</value>
+  </data>
+  <data name="FinalizeErrorBody" xml:space="preserve">
+    <value>檔案已搬移完成，但建立捷徑失敗：
+{0}
+
+您可以手動建立捷徑，例如：
+mklink /D "{1}" "{2}"</value>
+  </data>
+  <data name="LogCancelledByUser" xml:space="preserve">
+    <value>
+使用者已取消操作。已複製的檔案已從來源移除；其餘未處理的檔案維持原狀，且尚未建立捷徑。</value>
+  </data>
+  <data name="ClosingConfirmBody" xml:space="preserve">
+    <value>搬移作業仍在進行中，確定要取消並離開嗎？</value>
+  </data>
+</root>

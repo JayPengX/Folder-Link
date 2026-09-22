@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Threading;
 using FolderLinkApp;
 using Xunit;
 
@@ -245,5 +247,86 @@ public sealed class TransferSafetyTests : IDisposable
         Directory.CreateSymbolicLink(link, target);
 
         Assert.True(TransferSafety.IsReparsePoint(link));
+    }
+
+    // ------------------------------------------------------------------
+    // Localization — TestPreFlight's refusal messages come from
+    // CoreStrings.resx (English, neutral/default) and
+    // CoreStrings.zh-TW.resx (Traditional Chinese satellite) instead of
+    // hardcoded literals. These tests don't assert one exact wording (the
+    // point of localizing is that the wording now varies by culture);
+    // instead they confirm both resource sets actually resolve — this is
+    // the one thing that can't be verified by running the real WinForms
+    // app on Windows in this environment (see CLAUDE.md), so it's worth
+    // covering here: a wrong ResourceManager base name would otherwise
+    // only surface as a MissingManifestResourceException at runtime on a
+    // real machine.
+    //
+    // These mutate Thread.CurrentThread.CurrentUICulture, which xunit
+    // does not parallelize within a single test class by default, but
+    // each test still restores the original culture in a finally block
+    // to be safe.
+    [Fact]
+    public void PreFlight_message_is_english_under_the_neutral_english_culture()
+    {
+        var original = Thread.CurrentThread.CurrentUICulture;
+        try
+        {
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en");
+
+            var error = TransferSafety.TestPreFlight("", "somewhere");
+
+            Assert.NotNull(error);
+            Assert.Contains("source", error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentUICulture = original;
+        }
+    }
+
+    [Fact]
+    public void PreFlight_message_is_traditional_chinese_under_the_zh_TW_culture()
+    {
+        var original = Thread.CurrentThread.CurrentUICulture;
+        try
+        {
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("zh-TW");
+
+            var error = TransferSafety.TestPreFlight("", "somewhere");
+
+            Assert.NotNull(error);
+            Assert.Contains("來源資料夾", error);
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentUICulture = original;
+        }
+    }
+
+    [Fact]
+    public void PreFlight_message_for_a_missing_source_still_contains_the_path_in_every_culture()
+    {
+        // The disk-space and missing-source messages interpolate the
+        // path itself, so the path must survive localization regardless
+        // of which culture's format string wraps it.
+        var original = Thread.CurrentThread.CurrentUICulture;
+        try
+        {
+            var source = Path.Combine(_root, "does-not-exist");
+            var dest = NewDir("dest-for-locale-test");
+
+            foreach (var culture in new[] { "en", "zh-TW" })
+            {
+                Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+                var error = TransferSafety.TestPreFlight(source, dest);
+                Assert.NotNull(error);
+                Assert.Contains(source, error);
+            }
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentUICulture = original;
+        }
     }
 }

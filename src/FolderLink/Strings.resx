@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema
+
+    This is the NEUTRAL / DEFAULT resource file for FolderLinkApp.Strings.
+    Its text is English, and it is what .NET's satellite-assembly
+    fallback resolves to for any UI culture that isn't Traditional
+    Chinese (see Strings.zh-TW.resx for that satellite, and
+    Program.Main for how the active culture is chosen from the OS
+    display-language setting).
+
+    Version 2.0 supports x:type declarations for values other than
+    strings and byte arrays; this file only stores strings, which is
+    the schema every version of ResX understands.
+  -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="FormTitle" xml:space="preserve">
+    <value>FolderLink — Move Folder Contents and Leave a Shortcut at the Original Path</value>
+  </data>
+  <data name="SourceFolderLabel" xml:space="preserve">
+    <value>Source folder:</value>
+  </data>
+  <data name="DestFolderLabel" xml:space="preserve">
+    <value>Destination folder:</value>
+  </data>
+  <data name="BrowseButton" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="StartButton" xml:space="preserve">
+    <value>Start Move</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="SourceBrowseDialogDescription" xml:space="preserve">
+    <value>Select the source folder whose files will be moved</value>
+  </data>
+  <data name="DestBrowseDialogDescription" xml:space="preserve">
+    <value>Select (or create) the destination folder</value>
+  </data>
+
+  <data name="StatusFormat" xml:space="preserve">
+    <value>Status: {0}</value>
+  </data>
+  <data name="StatusIdle" xml:space="preserve">
+    <value>Idle</value>
+  </data>
+  <data name="StatusCopying" xml:space="preserve">
+    <value>Copying files...</value>
+  </data>
+  <data name="StatusStartFailed" xml:space="preserve">
+    <value>Failed to start</value>
+  </data>
+  <data name="StatusFinishingUp" xml:space="preserve">
+    <value>Finishing up...</value>
+  </data>
+  <data name="StatusCompletedWithErrors" xml:space="preserve">
+    <value>Completed with errors — see log</value>
+  </data>
+  <data name="StatusCompletedNeedsManualCheck" xml:space="preserve">
+    <value>Completed but needs manual review — see log</value>
+  </data>
+  <data name="StatusCompletedLeftoverFiles" xml:space="preserve">
+    <value>Completed but leftover files remain — see log</value>
+  </data>
+  <data name="StatusCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="StatusFinalizeFailed" xml:space="preserve">
+    <value>Finalize failed — see log</value>
+  </data>
+  <data name="StatusCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+
+  <data name="ConfirmMoveTitle" xml:space="preserve">
+    <value>Confirm Move</value>
+  </data>
+  <data name="ConfirmMoveBody" xml:space="preserve">
+    <value>This will move all files and subfolders from:
+{0}
+
+to:
+{1}
+
+and replace the original folder with a symbolic link pointing to the new location.
+
+Do you want to continue?</value>
+  </data>
+
+  <data name="LogTransferStarting" xml:space="preserve">
+    <value>Moving:
+  Source: {0}
+  Destination: {1}
+</value>
+  </data>
+  <data name="LogRoboStartFailed" xml:space="preserve">
+    <value>Failed to start robocopy: {0}</value>
+  </data>
+  <data name="LogRoboError" xml:space="preserve">
+    <value>
+Robocopy reported an error (exit code: {0}).</value>
+  </data>
+  <data name="LogRoboErrorLocked" xml:space="preserve">
+    <value>Some files may be in use (locked) and could not be moved even after several retries.</value>
+  </data>
+  <data name="LogRoboErrorAlreadyMoved" xml:space="preserve">
+    <value>Files that were already copied successfully have been removed from the source folder.</value>
+  </data>
+  <data name="LogRoboErrorRetryHint" xml:space="preserve">
+    <value>Please close any programs using the remaining files, then click "Start Move" again — files that were already moved will not be processed twice.</value>
+  </data>
+  <data name="ErrorSomeFilesInUseBody" xml:space="preserve">
+    <value>Some files could not be moved because they are in use.
+
+Please close the programs using them, then run the move again — files that were already moved will not be processed twice.
+
+The original folder will remain unchanged (no shortcut has been created yet), so no files will be lost.</value>
+  </data>
+
+  <data name="LogAllFilesCopied" xml:space="preserve">
+    <value>
+All files were copied successfully, finishing up...</value>
+  </data>
+  <data name="LogCannotConfirmEmpty" xml:space="preserve">
+    <value>Warning: could not confirm whether the source folder is empty ({0}). For safety, no shortcut will be created.</value>
+  </data>
+  <data name="LogLeftoverWarning" xml:space="preserve">
+    <value>Warning: items remain in the source folder (the original folder will be kept, no shortcut will be created):</value>
+  </data>
+  <data name="LogSymlinkCreated" xml:space="preserve">
+    <value>Shortcut created:
+  {0}  --&gt;  {1}</value>
+  </data>
+  <data name="CompletionBody" xml:space="preserve">
+    <value>Move complete.
+
+All files are now located at:
+{0}
+
+A symbolic link has been created at the original location, so existing shortcuts continue to work.</value>
+  </data>
+  <data name="LogFinalizeError" xml:space="preserve">
+    <value>An error occurred while finishing up: {0}</value>
+  </data>
+  <data name="FinalizeErrorBody" xml:space="preserve">
+    <value>Files have been moved, but creating the shortcut failed:
+{0}
+
+You can create the shortcut manually, for example:
+mklink /D "{1}" "{2}"</value>
+  </data>
+  <data name="LogCancelledByUser" xml:space="preserve">
+    <value>
+The operation was cancelled by the user. Files that were already copied have been removed from the source; the remaining files are unchanged, and no shortcut has been created.</value>
+  </data>
+  <data name="ClosingConfirmBody" xml:space="preserve">
+    <value>A move is still in progress. Are you sure you want to cancel and exit?</value>
+  </data>
+</root>
