@@ -13,8 +13,8 @@ non-English file names don't get garbled).
 ## Usage
 
 1. Double-click `Run-FolderLink.bat`. Accept the UAC prompt.
-2. Fill in the source and destination folders and click 開始搬移
-   (Start Transfer).
+2. Fill in the source and destination folders and click
+   Start Transfer (開始搬移).
 
 See [`checksums.txt`](checksums.txt) in this folder to verify these two
 files before running them.
