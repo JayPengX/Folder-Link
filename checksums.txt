@@ -6,4 +6,4 @@ On Windows (PowerShell):
 On Linux/macOS:
     sha256sum FolderLink.exe
 
-a1e0a721e5048cd36a8f618c1f1d7e9c399df0297dd95e325ad25840c7dfa4ab  FolderLink.exe
+b5c56bbc18a6d409af0915dd0f9f274b8264a5bee5db8ebac7dc83c7f8f9e8e7  FolderLink.exe

@@ -60,7 +60,17 @@ internal static class Program
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new MainForm());
+
+        // A WinExe has no console, so an exception escaping Main would make
+        // the app vanish with no visible error at all. Show it instead.
+        try
+        {
+            Application.Run(new MainForm());
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.ToString(), "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     internal static Encoding OemEncoding => Encoding.GetEncoding(GetOEMCP());

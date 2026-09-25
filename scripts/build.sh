@@ -39,6 +39,18 @@ dotnet publish "$REPO_ROOT/src/FolderLink" -c Release -r win-x64 --self-containe
     -p:DebugType=none \
     -o "$REPO_ROOT/src/FolderLink/publish"
 
+echo "== Checking embedded UI string resource name =="
+# Strings.Designer.cs asks ResourceManager for "FolderLinkApp.Strings". If
+# the csproj's RootNamespace drifts, the build still succeeds but the exe
+# crashes at launch (MissingManifestResourceException). Nothing else here
+# can catch that from Linux, so check the compiled assembly directly.
+APP_DLL="$REPO_ROOT/src/FolderLink/obj/Release/net8.0-windows/win-x64/FolderLink.dll"
+if ! grep -qa "FolderLinkApp.Strings.resources" "$APP_DLL"; then
+    echo "ERROR: FolderLinkApp.Strings.resources not embedded in $APP_DLL" >&2
+    echo "       (check <RootNamespace> in src/FolderLink/FolderLink.csproj)" >&2
+    exit 1
+fi
+
 cp "$REPO_ROOT/src/FolderLink/publish/FolderLink.exe" "$REPO_ROOT/FolderLink.exe"
 
 echo "== Updating checksums.txt =="

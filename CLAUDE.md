@@ -153,6 +153,27 @@ not a substitute for a real Windows run if you ever get one.
    Fix: check `Directory.Exists(source)` first; a missing source directory
    is now treated as the (expected) success case rather than an error.
 
+## The exe crashed at launch after the resx localization commit
+
+After UI strings moved into `Strings.resx`, the user reported the exe
+"can't boot". Cause: `src/FolderLink/FolderLink.csproj` had
+`<RootNamespace>FolderLink</RootNamespace>`, so the SDK embedded the
+resources as `FolderLink.Strings.resources`, but `Strings.Designer.cs`
+asks `ResourceManager` for `FolderLinkApp.Strings`. That compiles fine,
+then the first string lookup in `MainForm`'s constructor throws
+`MissingManifestResourceException` and the WinExe dies with no window.
+(The earlier comment claiming the SDK takes the name from the
+Designer.cs file's namespace was wrong. Core only worked because
+`FolderLink.Core.csproj` already sets `RootNamespace` to `FolderLinkApp`.)
+
+Fix: set `RootNamespace` to `FolderLinkApp` in the app csproj. Two guards
+were also added:
+- `scripts/build.sh` now fails if `FolderLinkApp.Strings.resources` is
+  missing from the compiled app dll.
+- `Program.Main` wraps `Application.Run(new MainForm())` in a try/catch
+  that shows the exception in a MessageBox, so a future startup crash
+  shows an error instead of silently doing nothing.
+
 ## UI cleanup from direct user feedback
 
 1. **The Browse button was getting cut off — two attempts.** `MainForm`

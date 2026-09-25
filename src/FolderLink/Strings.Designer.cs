@@ -23,18 +23,13 @@ namespace FolderLinkApp;
 /// </summary>
 internal static class Strings
 {
-    // The resource's manifest base name. The .NET SDK pairs "Strings.resx"
-    // with the co-located "Strings.Designer.cs" by file-name convention
-    // (the same convention that pairs, e.g., a WinForms "Form1.resx" with
-    // "Form1.cs") and takes the manifest name from *that file's actual
-    // C# namespace* — "FolderLinkApp" here — rather than from the
-    // project's <RootNamespace> ("FolderLink" in FolderLink.csproj, which
-    // turns out not to be what ends up in the compiled assembly's
-    // manifest). Confirmed empirically: FolderLink.Core.Tests failed
-    // every TestPreFlight assertion with MissingManifestResourceException
-    // until this matched the assembly's real embedded resource name — see
-    // the equivalent note on CoreStrings.Designer.cs, where the same
-    // thing happened.
+    // The resource's manifest base name. The .NET SDK embeds Strings.resx
+    // as "<RootNamespace>.Strings.resources", so this must match the
+    // <RootNamespace> in FolderLink.csproj (set to "FolderLinkApp" to
+    // match this file's C# namespace). It previously said "FolderLink",
+    // which compiled fine but made the first Strings lookup in MainForm's
+    // constructor throw MissingManifestResourceException, killing the exe
+    // at launch before any window appeared.
     private static readonly ResourceManager ResourceManager =
         new("FolderLinkApp.Strings", typeof(Strings).Assembly);
 

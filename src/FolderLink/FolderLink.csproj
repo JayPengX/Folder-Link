@@ -7,7 +7,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FolderLink</AssemblyName>
-    <RootNamespace>FolderLink</RootNamespace>
+    <!-- Must match the C# namespace (FolderLinkApp) that Strings.Designer.cs
+         passes to ResourceManager: the SDK names embedded .resx resources
+         <RootNamespace>.<FileName>. A mismatch here compiles fine but throws
+         MissingManifestResourceException in MainForm's constructor, so the
+         exe dies at launch with no window. -->
+    <RootNamespace>FolderLinkApp</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <InvariantGlobalization>false</InvariantGlobalization>
     <Version>2.0.0</Version>

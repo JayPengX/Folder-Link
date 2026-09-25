@@ -33,16 +33,11 @@ namespace FolderLinkApp;
 /// </summary>
 internal static class CoreStrings
 {
-    // The resource's manifest base name. The .NET SDK pairs
-    // "CoreStrings.resx" with the co-located "CoreStrings.Designer.cs" by
-    // file-name convention and takes the manifest name from *that file's
-    // actual C# namespace* — "FolderLinkApp" here — not from the
-    // project's <RootNamespace> (which defaults to the project name,
-    // "FolderLink.Core", since FolderLink.Core.csproj sets none
-    // explicitly). Confirmed empirically: dotnet test failed every
-    // TestPreFlight assertion with MissingManifestResourceException
-    // ("...among the resources 'FolderLinkApp.CoreStrings.resources'
-    // embedded...") until this was fixed to match.
+    // The resource's manifest base name. The .NET SDK embeds
+    // CoreStrings.resx as "<RootNamespace>.CoreStrings.resources", so
+    // this must match the <RootNamespace> in FolderLink.Core.csproj
+    // ("FolderLinkApp"). dotnet test fails with
+    // MissingManifestResourceException if the two ever drift apart.
     private static readonly ResourceManager ResourceManager =
         new("FolderLinkApp.CoreStrings", typeof(CoreStrings).Assembly);
 
