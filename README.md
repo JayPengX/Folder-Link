@@ -40,7 +40,7 @@ language your copy is showing.
 
 ## Download
 
-**[`FolderLink.exe`](https://raw.githubusercontent.com/jaypengx-collab/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/FolderLink.exe)**
+**[`FolderLink.exe`](https://raw.githubusercontent.com/JayPengX/Folder-Link/claude/windows-file-transfer-symlinks-yt5iiz/FolderLink.exe)**
 — one file, no installer, no dependencies to install first (it bundles
 its own .NET runtime). Right-click the link → *Save link as...*, or use
 the green **Code → Download ZIP** button at the top of this repo to get
