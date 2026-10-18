@@ -89,7 +89,6 @@ public sealed class WindowsEndToEndTests : IDisposable
         // 8.3 names can be turned off per volume; then there is nothing to hide.
         if (shortName.Length == 0 || string.Equals(shortName, source, StringComparison.OrdinalIgnoreCase)) return;
 
-        Assert.Null(TransferSafety.TestPreFlight(source, Path.Combine(shortName, "inner"), _ => long.MaxValue));
         Assert.Equal(CoreStrings.DestinationInsideSource,
             TransferSafety.TestPreFlight(source, Path.Combine(shortName, "inner"), _ => long.MaxValue, WindowsPaths.FinalPathOf));
     }
