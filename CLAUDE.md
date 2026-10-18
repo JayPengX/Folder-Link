@@ -21,14 +21,15 @@ safety-critical logic was later split into `src/FolderLink.Core` (plain
 tests (`src/FolderLink.Core.Tests`) — that split is deliberate, don't
 merge it back into the WinForms project.
 
-## This has been developed and tested entirely from Linux, never Windows
+## Where it's tested: Linux here, real Windows in CI
 
-No session so far has had access to an actual Windows machine. That
-shaped everything below. If you get access to real Windows, running the
-actual `FolderLink.exe` end-to-end (click through the UI, let it move
-real files, confirm the link works) would be the single most valuable
-thing you could do — it's the one thing no amount of code review from
-Linux can substitute for.
+Sessions work from Linux. Since October 2026, `.github/workflows/windows.yml`
+runs on `windows-latest` on every push: the Core tests, including
+`WindowsEndToEndTests` (a real robocopy move to a link, a drive root, an 8.3
+name, a `subst` drive; these return at once on non-Windows), and a Release
+build of the app. Check that workflow's run after a push. What CI still
+can't do is click through the window itself. A person running the actual
+`FolderLink.exe` end-to-end is still the most valuable check there is.
 
 ## Rebuilding: use `scripts/build.sh`
 
@@ -93,7 +94,7 @@ and the hash *doesn't* change.
 
 Every decision that could lose files now lives in `src/FolderLink.Core`
 (plain .NET, runs on Linux) and is tested in `src/FolderLink.Core.Tests`
-(`dotnet test`, 92 tests, real temp folders and real symlinks, no mocks):
+(`dotnet test`, 99 tests, real temp folders and real symlinks, no mocks):
 
 - `TransferSafety.TestPreFlight(source, destination, freeSpace?)` — every
   refusal. `freeSpace` maps a volume root to free bytes (null = unknown)
@@ -111,14 +112,15 @@ Every decision that could lose files now lives in `src/FolderLink.Core`
   `*.Designer.cs`: every key in both languages, no unused keys, and the
   same `{n}` placeholders in en and zh-TW.
 
-What is still **not automated, not run**: `src/FolderLink/Program.cs`
-(the WinForms window, starting `robocopy.exe`, OEM decoding of its output,
-the elevation manifest). It's now just wiring around the Core calls above.
-`dotnet build src/FolderLink` compiles it from Linux. Windows-only path
-shapes (`C:\`, `\\server\share`, `C:foo`, 8.3 names, junctions) can't be
-exercised on Linux, where `\` isn't a separator; the code uses
-`Path.GetPathRoot`/`IsPathFullyQualified` so it should hold there, but
-that's reviewed, not run.
+What is still **not automated**: the WinForms window in
+`src/FolderLink/Program.cs` (its buttons, OEM decoding of robocopy's output
+shown in the log box, the elevation manifest). It's just wiring around the
+Core calls above, and CI only builds it. Windows-only path shapes (8.3 names,
+`subst` drives, drive roots) now run in CI's `WindowsEndToEndTests`;
+`\\server\share` and junctions are still reviewed, not run. A path's real
+spelling comes from `WindowsPaths.FinalPathOf` (GetFinalPathNameByHandleW),
+which `TransferSafety.TestPreFlight(..., realPathOf:)` uses for the nesting
+check.
 
 ## Audit, October 2026 (bugs fixed, all with tests)
 
@@ -286,17 +288,12 @@ were also added:
 
 ## Git/repo constraints discovered this session
 
-- This session's push credentials are scoped to **one branch**
-  (`claude/windows-file-transfer-symlinks-yt5iiz`). Pushing a git tag
-  fails with a 403 even though pushing commits to that branch works —
-  don't assume tag pushes will succeed; check before relying on one.
-- The repo had zero commits before this work started, so this branch is
-  currently GitHub's **default branch** (confirmed via
-  `git remote show origin` → `HEAD branch:`). That's why README download
-  links point at the branch name directly instead of `main` or a release
-  tag — there was no better stable target available. If the repo
-  structure changes (a real `main` gets created, a release gets tagged
-  through some other means), update those links.
+- `main` is the default branch (`git remote show origin` → `HEAD branch:`),
+  and the README's download link is `main`'s raw `FolderLink.exe`. The old
+  first branch, `claude/windows-file-transfer-symlinks-yt5iiz`, is deleted,
+  so a link to it 404s. Point any new link at `main`.
+- Pushing a git tag once failed with a 403 while branch pushes worked:
+  don't rely on a tag push without checking it landed.
 - No GitHub "Release" object has ever been created here (no MCP tool was
   available to create one in the sessions so far) — `FolderLink.exe` is
   distributed by being committed directly to the repo and linked via its
