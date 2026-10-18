@@ -13,31 +13,6 @@ internal static class Program
     [DllImport("kernel32.dll")]
     private static extern int GetOEMCP();
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFileW(
-        string name, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern uint GetFinalPathNameByHandleW(
-        Microsoft.Win32.SafeHandles.SafeFileHandle handle, StringBuilder path, uint size, uint flags);
-
-    // The folder's own spelling from an open handle: 8.3 short names
-    // expanded, a mapped drive as \\server\share, links followed. Null when
-    // it can't be opened, so the nesting check keeps the paths as written.
-    internal static string? FinalPathOf(string folder)
-    {
-        const uint OpenExisting = 3, BackupSemantics = 0x02000000, ShareAll = 7;
-        using var handle = CreateFileW(folder, 0, ShareAll, IntPtr.Zero, OpenExisting, BackupSemantics, IntPtr.Zero);
-        if (handle.IsInvalid) return null;
-        var buffer = new StringBuilder(1024);
-        var length = GetFinalPathNameByHandleW(handle, buffer, (uint)buffer.Capacity, 0);
-        if (length == 0 || length >= buffer.Capacity) return null;
-        var path = buffer.ToString();
-        if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) return @"\\" + path[8..];
-        if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) return path[4..];
-        return path;
-    }
-
     [STAThread]
     private static void Main()
     {
@@ -294,7 +269,7 @@ internal sealed class MainForm : Form
 
     private void StartTransfer(string sourceInput, string destinationInput)
     {
-        var preflightError = TransferSafety.TestPreFlight(sourceInput, destinationInput, realPathOf: Program.FinalPathOf);
+        var preflightError = TransferSafety.TestPreFlight(sourceInput, destinationInput, realPathOf: WindowsPaths.FinalPathOf);
         if (preflightError != null)
         {
             ShowMessage(preflightError, MessageBoxIcon.Error);
