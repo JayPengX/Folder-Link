@@ -96,9 +96,9 @@ internal sealed class MainForm : Form
     private readonly ProgressBar _progressBar;
     private readonly TextBox _logBox;
 
+    // The robocopy run in progress, or null when idle.
     private Process? _roboProcess;
-    private string? _pendingSource;
-    private string? _pendingDest;
+    private bool _cancelRequested;
 
     public MainForm()
     {
@@ -119,73 +119,15 @@ internal sealed class MainForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font(Program.UiFontFamily, 9F);
 
-        const int margin = 15;
-        const int labelWidth = 110;
-        const int boxWidth = 390;
-
-        var sourceLabel = new Label
-        {
-            Text = Strings.SourceFolderLabel,
-            Location = new Point(margin, 20),
-            Size = new Size(labelWidth, 20),
-        };
-        _sourceBox = new TextBox
-        {
-            Location = new Point(margin + labelWidth, 18),
-            Size = new Size(boxWidth, 22),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-        };
-        var sourceBrowse = new Button
-        {
-            Text = Strings.BrowseButton,
-            Location = new Point(margin + labelWidth + boxWidth + 10, 17),
-            // AutoSize+GrowOnly means the button always grows to fit its
-            // own label text (measured with the actual runtime font/DPI),
-            // instead of relying on a fixed pixel width that could clip
-            // the text under a different font substitution or display
-            // scale than assumed here.
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowOnly,
-            MinimumSize = new Size(90, 24),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right,
-        };
-        sourceBrowse.Click += (_, _) =>
-        {
-            using var dlg = new FolderBrowserDialog { Description = Strings.SourceBrowseDialogDescription };
-            if (dlg.ShowDialog(this) == DialogResult.OK) _sourceBox.Text = dlg.SelectedPath;
-        };
-
-        var destLabel = new Label
-        {
-            Text = Strings.DestFolderLabel,
-            Location = new Point(margin, 55),
-            Size = new Size(labelWidth, 20),
-        };
-        _destBox = new TextBox
-        {
-            Location = new Point(margin + labelWidth, 53),
-            Size = new Size(boxWidth, 22),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-        };
-        var destBrowse = new Button
-        {
-            Text = Strings.BrowseButton,
-            Location = new Point(margin + labelWidth + boxWidth + 10, 52),
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowOnly,
-            MinimumSize = new Size(90, 24),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right,
-        };
-        destBrowse.Click += (_, _) =>
-        {
-            using var dlg = new FolderBrowserDialog { Description = Strings.DestBrowseDialogDescription };
-            if (dlg.ShowDialog(this) == DialogResult.OK) _destBox.Text = dlg.SelectedPath;
-        };
+        var (sourceLabel, sourceBox, sourceBrowse) = CreatePathRow(Strings.SourceFolderLabel, Strings.SourceBrowseDialogDescription, 20);
+        var (destLabel, destBox, destBrowse) = CreatePathRow(Strings.DestFolderLabel, Strings.DestBrowseDialogDescription, 55);
+        _sourceBox = sourceBox;
+        _destBox = destBox;
 
         _startButton = new Button
         {
             Text = Strings.StartButton,
-            Location = new Point(margin, 95),
+            Location = new Point(Gutter, 95),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowOnly,
             MinimumSize = new Size(120, 34),
@@ -196,25 +138,25 @@ internal sealed class MainForm : Form
         _cancelButton = new Button
         {
             Text = Strings.CancelButton,
-            Location = new Point(margin + 130, 95),
+            Location = new Point(Gutter + 130, 95),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowOnly,
             MinimumSize = new Size(100, 34),
             Enabled = false,
         };
-        _cancelButton.Click += (_, _) => CancelTransfer();
+        _cancelButton.Click += (_, _) => StopRobocopy();
 
         _statusLabel = new Label
         {
             Text = string.Format(Strings.StatusFormat, Strings.StatusIdle),
-            Location = new Point(margin, 138),
+            Location = new Point(Gutter, 138),
             Size = new Size(660, 20),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
         };
 
         _progressBar = new ProgressBar
         {
-            Location = new Point(margin, 160),
+            Location = new Point(Gutter, 160),
             Size = new Size(690, 18),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
         };
@@ -225,7 +167,7 @@ internal sealed class MainForm : Form
             ScrollBars = ScrollBars.Vertical,
             ReadOnly = true,
             Font = new Font("Consolas", 9F),
-            Location = new Point(margin, 185),
+            Location = new Point(Gutter, 185),
             Size = new Size(690, 250),
             Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
         };
@@ -241,15 +183,67 @@ internal sealed class MainForm : Form
         FormClosing += OnFormClosing;
     }
 
+    private const int Gutter = 15;
+    private const int LabelWidth = 110;
+    private const int BoxWidth = 390;
+
+    /// <summary>One "label, text box, Browse..." row.</summary>
+    private (Label, TextBox, Button) CreatePathRow(string labelText, string dialogDescription, int top)
+    {
+        var label = new Label
+        {
+            Text = labelText,
+            Location = new Point(Gutter, top),
+            Size = new Size(LabelWidth, 20),
+        };
+        var box = new TextBox
+        {
+            Location = new Point(Gutter + LabelWidth, top - 2),
+            Size = new Size(BoxWidth, 22),
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+        };
+        var browse = new Button
+        {
+            Text = Strings.BrowseButton,
+            Location = new Point(Gutter + LabelWidth + BoxWidth + 10, top - 3),
+            // AutoSize+GrowOnly means the button always grows to fit its
+            // own label text (measured with the actual runtime font/DPI),
+            // instead of relying on a fixed pixel width that could clip
+            // the text under a different font substitution or display
+            // scale than assumed here.
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowOnly,
+            MinimumSize = new Size(90, 24),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+        };
+        browse.Click += (_, _) =>
+        {
+            using var dlg = new FolderBrowserDialog { Description = dialogDescription };
+            if (dlg.ShowDialog(this) == DialogResult.OK) box.Text = dlg.SelectedPath;
+        };
+        return (label, box, browse);
+    }
+
     private void SetStatus(string text) => _statusLabel.Text = string.Format(Strings.StatusFormat, text);
 
-    private void LogLine(string text)
+    private void ShowMessage(string text, MessageBoxIcon icon, string? title = null) =>
+        MessageBox.Show(this, text, title ?? "FolderLink", MessageBoxButtons.OK, icon);
+
+    /// <summary>
+    /// Runs on the UI thread. Robocopy's output and exit events arrive on
+    /// thread-pool threads and can race the window closing, when
+    /// BeginInvoke throws; there is nothing left to update then.
+    /// </summary>
+    private void PostToUi(Action action)
     {
-        if (IsHandleCreated)
+        try
         {
-            BeginInvoke(() => _logBox.AppendText(text + Environment.NewLine));
+            if (IsHandleCreated && !IsDisposed) BeginInvoke(action);
         }
+        catch (InvalidOperationException) { /* window is closing */ }
     }
+
+    private void LogLine(string text) => PostToUi(() => _logBox.AppendText(text + Environment.NewLine));
 
     private void SetBusy(bool busy)
     {
@@ -261,37 +255,48 @@ internal sealed class MainForm : Form
         if (!busy) _progressBar.Value = 0;
     }
 
+    private void EndRun(string status)
+    {
+        SetStatus(status);
+        SetBusy(false);
+    }
+
     // ------------------------------------------------------------------
-    // Robocopy driven move
+    // Robocopy driven move. The decisions (is it safe, what does the exit
+    // code mean, may the source be replaced) live in FolderLink.Core and
+    // are tested there; this part only drives the process and the UI.
     // ------------------------------------------------------------------
 
-    private void StartTransfer(string source, string destination)
+    private void StartTransfer(string sourceInput, string destinationInput)
     {
-        var preflightError = TransferSafety.TestPreFlight(source, destination);
+        var preflightError = TransferSafety.TestPreFlight(sourceInput, destinationInput);
         if (preflightError != null)
         {
-            MessageBox.Show(this, preflightError, "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ShowMessage(preflightError, MessageBoxIcon.Error);
             return;
         }
 
-        var confirm = MessageBox.Show(
-            this,
-            string.Format(Strings.ConfirmMoveBody, source, destination),
-            Strings.ConfirmMoveTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        // From here on use one spelling of each path everywhere: absolute,
+        // no trailing separator (robocopy reads a trailing \ before a
+        // closing quote as an escaped quote) and an absolute link target.
+        var source = TransferPaths.Normalize(sourceInput);
+        var destination = TransferPaths.Normalize(destinationInput);
+
+        var body = string.Format(Strings.ConfirmMoveBody, source, destination);
+        if (TransferSafety.HasContents(destination))
+            body += Environment.NewLine + Environment.NewLine + Strings.ConfirmMoveDestNotEmpty;
+        var confirm = MessageBox.Show(this, body, Strings.ConfirmMoveTitle, MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (confirm != DialogResult.Yes) return;
 
-        // No need to pre-create the destination here: the folder-browse
-        // dialog above already lets the user create a new folder natively,
-        // and robocopy itself creates any missing destination path when it
-        // copies.
-
-        _pendingSource = source;
-        _pendingDest = destination;
+        // No need to pre-create the destination: the browse dialog can make
+        // a new folder, and robocopy creates a missing destination itself.
 
         _logBox.Clear();
         LogLine(string.Format(Strings.LogTransferStarting, source, destination));
         SetStatus(Strings.StatusCopying);
         SetBusy(true);
+        _cancelRequested = false;
 
         var psi = new ProcessStartInfo
         {
@@ -300,162 +305,134 @@ internal sealed class MainForm : Form
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            // We pass /NFL /NDL below, so robocopy never prints a per-file or
-            // per-dir listing line — the only content it ever emits is the
-            // banner/summary, which robocopy always writes in the OEM
-            // codepage (this is true even with /UNICODE — that switch only
-            // affects the per-file/per-dir lines we've suppressed). Decoding
-            // it as UTF-16 instead corrupts every line, including the
-            // Chinese source/dest paths in the "Source :"/"Dest :" lines.
+            // Robocopy.BuildArguments passes /NFL /NDL, so robocopy never
+            // prints a per-file or per-dir line: all it emits is the
+            // banner/summary, which is always in the OEM codepage (even with
+            // /UNICODE, which only affects the suppressed lines). Decoding it
+            // as UTF-16 instead corrupts every line, Chinese paths included.
             StandardOutputEncoding = Program.OemEncoding,
             StandardErrorEncoding = Program.OemEncoding,
         };
-        // /MOVE   move files & dirs, delete from source once copied
-        // /E      include subfolders, including empty ones
-        // /IS     include files that already look identical, so they are still moved (not silently left behind)
-        // /R:5 /W:5   retry a locked/in-use file 5 times, 5 seconds apart, then move on
-        // /XJ     do not follow junctions/symlinks found inside the source (avoids loops/duplication)
-        // /MT:8   copy up to 8 files in parallel
-        // /NFL /NDL /NP   quieter, more readable log output (also: keeps robocopy's whole
-        //                 output in the OEM codepage — see StandardOutputEncoding above)
-        foreach (var arg in new[]
-                 {
-                     source, destination,
-                     "/MOVE", "/E", "/IS", "/R:5", "/W:5", "/XJ", "/MT:8", "/NFL", "/NDL", "/NP",
-                 })
-        {
+        foreach (var arg in Robocopy.BuildArguments(source, destination))
             psi.ArgumentList.Add(arg);
-        }
 
-        _roboProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        _roboProcess.OutputDataReceived += (_, e) => { if (e.Data != null) LogLine(e.Data); };
-        _roboProcess.ErrorDataReceived += (_, e) => { if (e.Data != null) LogLine(e.Data); };
-        _roboProcess.Exited += (_, _) =>
+        var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        process.OutputDataReceived += (_, e) => { if (e.Data != null) LogLine(e.Data); };
+        process.ErrorDataReceived += (_, e) => { if (e.Data != null) LogLine(e.Data); };
+        process.Exited += (_, _) =>
         {
-            _roboProcess.WaitForExit(); // ensures redirected streams are fully drained first
-            if (IsHandleCreated) BeginInvoke(CompleteTransfer);
+            process.WaitForExit(); // ensures redirected streams are fully drained first
+            PostToUi(() => CompleteTransfer(process, source, destination));
         };
+        _roboProcess = process;
 
         try
         {
-            _roboProcess.Start();
-            _roboProcess.BeginOutputReadLine();
-            _roboProcess.BeginErrorReadLine();
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
         }
         catch (Exception ex)
         {
+            _roboProcess = null;
+            process.Dispose();
             LogLine(string.Format(Strings.LogRoboStartFailed, ex.Message));
-            SetStatus(Strings.StatusStartFailed);
-            SetBusy(false);
+            EndRun(Strings.StatusStartFailed);
         }
     }
 
-    private void CompleteTransfer()
+    private void CompleteTransfer(Process process, string source, string destination)
     {
-        if (_roboProcess is null || _pendingSource is null || _pendingDest is null) return;
+        // Only the run that is current may finish; anything else is stale.
+        if (!ReferenceEquals(process, _roboProcess)) return;
+        _roboProcess = null;
+        var exitCode = process.ExitCode;
+        process.Dispose();
 
-        var exitCode = _roboProcess.ExitCode;
-        var source = _pendingSource;
-        var destination = _pendingDest;
-
-        if (exitCode >= 8)
+        switch (Robocopy.Interpret(exitCode, _cancelRequested))
         {
-            LogLine(string.Format(Strings.LogRoboError, exitCode));
-            LogLine(Strings.LogRoboErrorLocked);
-            LogLine(Strings.LogRoboErrorAlreadyMoved);
-            LogLine(Strings.LogRoboErrorRetryHint);
-            SetStatus(Strings.StatusCompletedWithErrors);
-            SetBusy(false);
-            MessageBox.Show(
-                this,
-                Strings.ErrorSomeFilesInUseBody,
-                "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            case RobocopyOutcome.Cancelled:
+                // Never go on to delete/link after a cancel, whatever robocopy
+                // managed to do before it was stopped.
+                LogLine(Strings.LogCancelledByUser);
+                EndRun(Strings.StatusCancelled);
+                return;
+
+            case RobocopyOutcome.Fatal:
+                LogLine(string.Format(Strings.LogRoboError, exitCode));
+                LogLine(Strings.LogRoboErrorFatal);
+                EndRun(Strings.StatusCompletedWithErrors);
+                ShowMessage(Strings.ErrorRoboFatalBody, MessageBoxIcon.Warning);
+                return;
+
+            case RobocopyOutcome.SomeFilesFailed:
+                LogLine(string.Format(Strings.LogRoboError, exitCode));
+                LogLine(Strings.LogRoboErrorLocked);
+                LogLine(Strings.LogRoboErrorAlreadyMoved);
+                LogLine(Strings.LogRoboErrorRetryHint);
+                EndRun(Strings.StatusCompletedWithErrors);
+                ShowMessage(Strings.ErrorSomeFilesInUseBody, MessageBoxIcon.Warning);
+                return;
         }
 
         LogLine(Strings.LogAllFilesCopied);
         SetStatus(Strings.StatusFinishingUp);
 
-        try
+        var result = TransferFinalizer.ReplaceSourceWithLink(source, destination);
+        switch (result.Status)
         {
-            // robocopy /MOVE deletes source directories once they're fully
-            // emptied out, including the root source folder itself — so it
-            // being gone entirely is the expected success case, not a
-            // failure to verify. Only a real enumeration error (e.g. a
-            // permissions problem on a source folder that still exists)
-            // should block the symlink for safety.
-            bool hasLeftover;
-            try
-            {
-                hasLeftover = Directory.Exists(source)
-                    && Directory.EnumerateFileSystemEntries(source, "*", SearchOption.AllDirectories).Any();
-            }
-            catch (Exception ex)
-            {
-                LogLine(string.Format(Strings.LogCannotConfirmEmpty, ex.Message));
-                SetStatus(Strings.StatusCompletedNeedsManualCheck);
-                SetBusy(false);
-                return;
-            }
+            case FinalizeStatus.Linked:
+                LogLine(string.Format(Strings.LogSymlinkCreated, source, destination));
+                EndRun(Strings.StatusCompleted);
+                ShowMessage(string.Format(Strings.CompletionBody, destination), MessageBoxIcon.Information);
+                break;
 
-            if (hasLeftover)
-            {
+            case FinalizeStatus.LeftoverItems:
                 LogLine(Strings.LogLeftoverWarning);
-                foreach (var entry in Directory.EnumerateFileSystemEntries(source, "*", SearchOption.AllDirectories))
+                foreach (var entry in result.Leftovers)
                     LogLine($"  {entry}");
-                SetStatus(Strings.StatusCompletedLeftoverFiles);
-                SetBusy(false);
-                return;
-            }
+                if (result.MoreLeftovers)
+                    LogLine(Strings.LogLeftoverMore);
+                EndRun(Strings.StatusCompletedLeftoverFiles);
+                break;
 
-            if (Directory.Exists(source))
-                Directory.Delete(source, recursive: true);
-            Directory.CreateSymbolicLink(source, destination);
-            LogLine(string.Format(Strings.LogSymlinkCreated, source, destination));
-            SetStatus(Strings.StatusCompleted);
-            MessageBox.Show(
-                this,
-                string.Format(Strings.CompletionBody, destination),
-                "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-        catch (Exception ex)
-        {
-            LogLine(string.Format(Strings.LogFinalizeError, ex.Message));
-            SetStatus(Strings.StatusFinalizeFailed);
-            MessageBox.Show(
-                this,
-                string.Format(Strings.FinalizeErrorBody, ex.Message, source, destination),
-                "FolderLink", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
+            case FinalizeStatus.CannotVerify:
+                LogLine(string.Format(Strings.LogCannotConfirmEmpty, result.Error));
+                EndRun(Strings.StatusCompletedNeedsManualCheck);
+                break;
 
-        SetBusy(false);
+            case FinalizeStatus.LinkFailed:
+                LogLine(string.Format(Strings.LogFinalizeError, result.Error));
+                EndRun(Strings.StatusFinalizeFailed);
+                ShowMessage(string.Format(Strings.FinalizeErrorBody, result.Error, source, destination), MessageBoxIcon.Error);
+                break;
+        }
     }
 
-    private void CancelTransfer()
+    /// <summary>
+    /// Asks robocopy to stop. The run ends (and the buttons come back) when
+    /// the process has actually exited, in CompleteTransfer, so a new run
+    /// can't start while the old one is still going.
+    /// </summary>
+    private void StopRobocopy()
     {
-        if (_roboProcess is { HasExited: false })
-        {
-            try { _roboProcess.Kill(entireProcessTree: true); }
-            catch { /* already exiting */ }
-            LogLine(Strings.LogCancelledByUser);
-            SetStatus(Strings.StatusCancelled);
-        }
-        SetBusy(false);
+        if (_roboProcess is null) return;
+        _cancelRequested = true;
+        _cancelButton.Enabled = false;
+        try { _roboProcess.Kill(entireProcessTree: true); }
+        catch { /* already exiting */ }
     }
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
-        if (_roboProcess is { HasExited: false })
+        if (_roboProcess is null) return;
+        var r = MessageBox.Show(this, Strings.ClosingConfirmBody, "FolderLink",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        if (r != DialogResult.Yes)
         {
-            var r = MessageBox.Show(this, Strings.ClosingConfirmBody, "FolderLink",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (r != DialogResult.Yes)
-            {
-                e.Cancel = true;
-                return;
-            }
-            try { _roboProcess.Kill(entireProcessTree: true); }
-            catch { /* already exiting */ }
+            e.Cancel = true;
+            return;
         }
+        StopRobocopy();
     }
 }

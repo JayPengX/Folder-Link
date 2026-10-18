@@ -8,8 +8,30 @@ namespace FolderLinkApp;
 /// </summary>
 public static class TransferSafety
 {
-    public static bool IsReparsePoint(string path) =>
-        (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+    /// <summary>
+    /// True when the path itself is a symbolic link or junction (dangling
+    /// ones included). False when nothing exists at the path.
+    /// </summary>
+    public static bool IsReparsePoint(string path)
+    {
+        try { return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; }
+        catch (FileNotFoundException) { return false; }
+        catch (DirectoryNotFoundException) { return false; }
+    }
+
+    /// <summary>Free bytes on the volume whose root is given, or null when unknown.</summary>
+    public static long? DriveFreeSpace(string root)
+    {
+        var drive = new DriveInfo(root);
+        return drive.IsReady ? drive.AvailableFreeSpace : null;
+    }
+
+    /// <summary>True when the folder exists and has anything in it.</summary>
+    public static bool HasContents(string path)
+    {
+        try { return Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any(); }
+        catch { return false; }
+    }
 
     public static long GetDirectorySizeSafe(string root)
     {
@@ -49,46 +71,67 @@ public static class TransferSafety
 
     /// <summary>
     /// Returns a human-readable error if the move should be refused, or
-    /// null if it's safe to proceed.
+    /// null if it's safe to proceed. <paramref name="freeSpace"/> maps a
+    /// volume root to its free bytes (null = unknown); it defaults to
+    /// <see cref="DriveFreeSpace"/> and exists so tests can fake a full disk.
     /// </summary>
-    public static string? TestPreFlight(string source, string destination)
+    public static string? TestPreFlight(string source, string destination, Func<string, long?>? freeSpace = null)
     {
         if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination))
             return CoreStrings.BothPathsRequired;
 
-        if (!Directory.Exists(source))
+        // Relative paths ("data", "C:data", "\data") would be resolved
+        // against whatever the current folder happens to be, and would turn
+        // into a relative link target. Only accept fully spelled-out paths.
+        if (!Path.IsPathFullyQualified(source) || !Path.IsPathFullyQualified(destination))
+            return CoreStrings.PathsMustBeAbsolute;
+
+        string src, dst;
+        try
+        {
+            src = TransferPaths.Normalize(source);
+            dst = TransferPaths.Normalize(destination);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return CoreStrings.PathInvalid;
+        }
+
+        // Checked before anything walks the source: a root can't be deleted
+        // and replaced by a link, so its contents would be moved for nothing.
+        if (TransferPaths.IsRoot(src))
+            return CoreStrings.SourceIsDriveRoot;
+
+        if (!Directory.Exists(src))
             return string.Format(CoreStrings.SourceDoesNotExist, source);
 
-        if (IsReparsePoint(source))
+        if (IsReparsePoint(src))
             return CoreStrings.SourceIsAlreadyLink;
 
-        var srcFull = Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        var dstFull = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        // Compare both as written and with links along the way resolved, so
+        // a destination spelled through a link can't hide that it is really
+        // the source or inside it.
+        var nesting = CheckNesting(src, dst) ?? CheckNesting(TransferPaths.ResolveLinks(src), TransferPaths.ResolveLinks(dst));
+        if (nesting != null)
+            return nesting;
 
-        if (string.Equals(srcFull, dstFull, StringComparison.OrdinalIgnoreCase))
-            return CoreStrings.SourceEqualsDestination;
-
-        if (dstFull.StartsWith(srcFull, StringComparison.OrdinalIgnoreCase))
-            return CoreStrings.DestinationInsideSource;
-
-        if (srcFull.StartsWith(dstFull, StringComparison.OrdinalIgnoreCase))
-            return CoreStrings.SourceInsideDestination;
-
-        if (Directory.Exists(destination) && IsReparsePoint(destination))
+        if (IsReparsePoint(dst))
             return CoreStrings.DestinationIsAlreadyLink;
+
+        if (File.Exists(dst))
+            return CoreStrings.DestinationIsAFile;
 
         try
         {
-            var totalBytes = GetDirectorySizeSafe(source);
-            var destRoot = Path.GetPathRoot(Path.GetFullPath(destination));
+            var destRoot = Path.GetPathRoot(dst);
             if (!string.IsNullOrEmpty(destRoot))
             {
-                var drive = new DriveInfo(destRoot);
-                if (drive.IsReady && drive.AvailableFreeSpace < totalBytes)
+                var available = (freeSpace ?? DriveFreeSpace)(destRoot);
+                if (available is long have)
                 {
-                    var needGb = Math.Round(totalBytes / 1024.0 / 1024 / 1024, 2);
-                    var haveGb = Math.Round(drive.AvailableFreeSpace / 1024.0 / 1024 / 1024, 2);
-                    return string.Format(CoreStrings.InsufficientDiskSpace, destRoot, needGb, haveGb);
+                    var need = GetDirectorySizeSafe(src);
+                    if (have < need)
+                        return string.Format(CoreStrings.InsufficientDiskSpace, destRoot, ToGb(need), ToGb(have));
                 }
             }
         }
@@ -100,4 +143,14 @@ public static class TransferSafety
 
         return null;
     }
+
+    private static string? CheckNesting(string src, string dst)
+    {
+        if (TransferPaths.AreSame(src, dst)) return CoreStrings.SourceEqualsDestination;
+        if (TransferPaths.IsInside(dst, src)) return CoreStrings.DestinationInsideSource;
+        if (TransferPaths.IsInside(src, dst)) return CoreStrings.SourceInsideDestination;
+        return null;
+    }
+
+    private static double ToGb(long bytes) => Math.Round(bytes / 1024.0 / 1024 / 1024, 2);
 }

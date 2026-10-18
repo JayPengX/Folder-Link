@@ -56,6 +56,7 @@ internal static class Strings
 
     internal static string ConfirmMoveTitle => Get(nameof(ConfirmMoveTitle));
     internal static string ConfirmMoveBody => Get(nameof(ConfirmMoveBody));
+    internal static string ConfirmMoveDestNotEmpty => Get(nameof(ConfirmMoveDestNotEmpty));
 
     internal static string LogTransferStarting => Get(nameof(LogTransferStarting));
     internal static string LogRoboStartFailed => Get(nameof(LogRoboStartFailed));
@@ -64,10 +65,13 @@ internal static class Strings
     internal static string LogRoboErrorAlreadyMoved => Get(nameof(LogRoboErrorAlreadyMoved));
     internal static string LogRoboErrorRetryHint => Get(nameof(LogRoboErrorRetryHint));
     internal static string ErrorSomeFilesInUseBody => Get(nameof(ErrorSomeFilesInUseBody));
+    internal static string LogRoboErrorFatal => Get(nameof(LogRoboErrorFatal));
+    internal static string ErrorRoboFatalBody => Get(nameof(ErrorRoboFatalBody));
 
     internal static string LogAllFilesCopied => Get(nameof(LogAllFilesCopied));
     internal static string LogCannotConfirmEmpty => Get(nameof(LogCannotConfirmEmpty));
     internal static string LogLeftoverWarning => Get(nameof(LogLeftoverWarning));
+    internal static string LogLeftoverMore => Get(nameof(LogLeftoverMore));
     internal static string LogSymlinkCreated => Get(nameof(LogSymlinkCreated));
     internal static string CompletionBody => Get(nameof(CompletionBody));
     internal static string LogFinalizeError => Get(nameof(LogFinalizeError));

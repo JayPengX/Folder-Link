@@ -57,4 +57,16 @@ Please choose the folder that actually contains the files.</value>
     <value>{0} does not have enough free space
 Needed: {1} GB, Available: {2} GB</value>
   </data>
+  <data name="PathsMustBeAbsolute" xml:space="preserve">
+    <value>Please enter full folder paths (for example C:\Users\Name\Documents), not relative ones.</value>
+  </data>
+  <data name="PathInvalid" xml:space="preserve">
+    <value>One of the folder paths is not a valid path.</value>
+  </data>
+  <data name="SourceIsDriveRoot" xml:space="preserve">
+    <value>The source cannot be the top of a drive or network share (for example D:\). Please choose a folder.</value>
+  </data>
+  <data name="DestinationIsAFile" xml:space="preserve">
+    <value>The destination is an existing file, not a folder. Please choose a folder as the destination.</value>
+  </data>
 </root>

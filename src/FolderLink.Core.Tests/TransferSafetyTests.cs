@@ -249,6 +249,44 @@ public sealed class TransferSafetyTests : IDisposable
         Assert.True(TransferSafety.IsReparsePoint(link));
     }
 
+    [Fact]
+    public void IsReparsePoint_is_false_when_nothing_is_there()
+    {
+        Assert.False(TransferSafety.IsReparsePoint(Path.Combine(_root, "nothing-here")));
+    }
+
+    [Fact]
+    public void IsReparsePoint_is_true_for_a_dangling_link()
+    {
+        var link = Path.Combine(_root, "dangling");
+        Directory.CreateSymbolicLink(link, Path.Combine(_root, "never-created"));
+
+        Assert.True(TransferSafety.IsReparsePoint(link));
+    }
+
+    // ------------------------------------------------------------------
+    // HasContents — drives the "destination is not empty" warning.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void HasContents_is_false_for_missing_and_empty_folders()
+    {
+        Assert.False(TransferSafety.HasContents(Path.Combine(_root, "missing")));
+        Assert.False(TransferSafety.HasContents(NewDir("empty")));
+    }
+
+    [Fact]
+    public void HasContents_is_true_for_a_file_or_an_empty_subfolder()
+    {
+        var withFile = NewDir("with-file");
+        WriteFile(withFile, "a.txt", 1);
+        var withDir = NewDir("with-dir");
+        Directory.CreateDirectory(Path.Combine(withDir, "sub"));
+
+        Assert.True(TransferSafety.HasContents(withFile));
+        Assert.True(TransferSafety.HasContents(withDir));
+    }
+
     // ------------------------------------------------------------------
     // Localization — TestPreFlight's refusal messages come from
     // CoreStrings.resx (English, neutral/default) and

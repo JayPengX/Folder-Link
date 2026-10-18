@@ -49,6 +49,10 @@ internal static class CoreStrings
     internal static string SourceInsideDestination => Get(nameof(SourceInsideDestination));
     internal static string DestinationIsAlreadyLink => Get(nameof(DestinationIsAlreadyLink));
     internal static string InsufficientDiskSpace => Get(nameof(InsufficientDiskSpace));
+    internal static string PathsMustBeAbsolute => Get(nameof(PathsMustBeAbsolute));
+    internal static string PathInvalid => Get(nameof(PathInvalid));
+    internal static string SourceIsDriveRoot => Get(nameof(SourceIsDriveRoot));
+    internal static string DestinationIsAFile => Get(nameof(DestinationIsAFile));
 
     private static string Get(string name) => ResourceManager.GetString(name) ?? name;
 }

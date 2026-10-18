@@ -49,4 +49,16 @@
     <value>{0} 空間不足
 需要：{1} GB，可用：{2} GB</value>
   </data>
+  <data name="PathsMustBeAbsolute" xml:space="preserve">
+    <value>請輸入完整的資料夾路徑（例如 C:\Users\Name\Documents），不可使用相對路徑。</value>
+  </data>
+  <data name="PathInvalid" xml:space="preserve">
+    <value>其中一個資料夾路徑不是有效的路徑。</value>
+  </data>
+  <data name="SourceIsDriveRoot" xml:space="preserve">
+    <value>來源不可以是磁碟機或網路共用的最上層（例如 D:\），請選擇一個資料夾。</value>
+  </data>
+  <data name="DestinationIsAFile" xml:space="preserve">
+    <value>目的位置是一個現有的檔案，而不是資料夾。請選擇一個資料夾作為目的位置。</value>
+  </data>
 </root>

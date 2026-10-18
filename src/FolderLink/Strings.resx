@@ -170,4 +170,18 @@ The operation was cancelled by the user. Files that were already copied have bee
   <data name="ClosingConfirmBody" xml:space="preserve">
     <value>A move is still in progress. Are you sure you want to cancel and exit?</value>
   </data>
+  <data name="ConfirmMoveDestNotEmpty" xml:space="preserve">
+    <value>Note: the destination folder is not empty. The moved files will be merged into it, and any file there with the same name as a file being moved will be overwritten.</value>
+  </data>
+  <data name="LogRoboErrorFatal" xml:space="preserve">
+    <value>Robocopy could not carry out the move (for example the destination could not be created or access was denied). Check the messages above.</value>
+  </data>
+  <data name="ErrorRoboFatalBody" xml:space="preserve">
+    <value>Robocopy could not carry out the move. See the log for the reason.
+
+The original folder has not been replaced with a shortcut, so no files will be lost.</value>
+  </data>
+  <data name="LogLeftoverMore" xml:space="preserve">
+    <value>  ... (more items not shown)</value>
+  </data>
 </root>

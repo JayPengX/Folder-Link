@@ -30,7 +30,7 @@ dotnet test "$REPO_ROOT/src/FolderLink.Core.Tests"
 echo "== Publishing win-x64 self-contained single-file exe =="
 # EnableWindowsTargeting + the WindowsForms FrameworkReference (both set
 # in src/FolderLink/FolderLink.csproj) are what make this possible from a
-# non-Windows host — see AGENTS.md if this step ever starts failing.
+# non-Windows host — see CLAUDE.md if this step ever starts failing.
 rm -rf "$REPO_ROOT/src/FolderLink/publish"
 dotnet publish "$REPO_ROOT/src/FolderLink" -c Release -r win-x64 --self-contained true \
     -p:PublishSingleFile=true \

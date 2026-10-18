@@ -91,24 +91,82 @@ and the hash *doesn't* change.
 
 ## Test coverage: what's real, what isn't
 
-- `src/FolderLink.Core.Tests` (`dotnet test`) — **real, passing,
-  automated**, runs on Linux. Covers the pre-flight refusal logic (same
-  folder, nested either direction, already-a-link source/destination,
-  disk space arithmetic, a sibling-folder-name-prefix edge case) and the
-  recursive directory-size calculation, using real temp directories and
-  real symbolic links (`Directory.CreateSymbolicLink` is cross-platform
-  in .NET 6+, works fine on Linux for this purpose).
-- Everything else in `src/FolderLink` (the WinForms UI, the actual
-  `robocopy.exe` invocation, output parsing, admin elevation via the app
-  manifest, the finalize-and-link step) — **not automated, not run**.
-  robocopy isn't available on Linux and WinForms can't render here. This
-  has been reviewed by reading, not by execution. Treat it as "should
-  work" rather than "verified."
-- The disk-space-insufficient refusal path specifically has no test
-  (hard to simulate a full disk without a mock `DriveInfo`, which the
-  current code doesn't use). If you add one, you'll likely need to
-  introduce a seam (an injectable size/free-space provider) rather than
-  calling `DriveInfo` directly.
+Every decision that could lose files now lives in `src/FolderLink.Core`
+(plain .NET, runs on Linux) and is tested in `src/FolderLink.Core.Tests`
+(`dotnet test`, 92 tests, real temp folders and real symlinks, no mocks):
+
+- `TransferSafety.TestPreFlight(source, destination, freeSpace?)` — every
+  refusal. `freeSpace` maps a volume root to free bytes (null = unknown)
+  and defaults to `DriveInfo`; it is the seam that finally lets the
+  disk-full refusal be tested.
+- `TransferPaths` — `Normalize` (absolute, `..` resolved, no trailing
+  separator except on a root), `AreSame`/`IsInside` (case-insensitive,
+  separator-aware so `source` vs `source-backup` isn't "nested"),
+  `IsRoot`, and `ResolveLinks` (replaces any link along a path with its
+  final target, bounded against cycles).
+- `Robocopy.BuildArguments` / `Robocopy.Interpret(exitCode, cancelRequested)`.
+- `TransferFinalizer.ReplaceSourceWithLink` — the only code that deletes
+  anything.
+- `ResourceFileTests` parses both projects' `.resx` files and hand-written
+  `*.Designer.cs`: every key in both languages, no unused keys, and the
+  same `{n}` placeholders in en and zh-TW.
+
+What is still **not automated, not run**: `src/FolderLink/Program.cs`
+(the WinForms window, starting `robocopy.exe`, OEM decoding of its output,
+the elevation manifest). It's now just wiring around the Core calls above.
+`dotnet build src/FolderLink` compiles it from Linux. Windows-only path
+shapes (`C:\`, `\\server\share`, `C:foo`, 8.3 names, junctions) can't be
+exercised on Linux, where `\` isn't a separator; the code uses
+`Path.GetPathRoot`/`IsPathFullyQualified` so it should hold there, but
+that's reviewed, not run.
+
+## Audit, October 2026 (bugs fixed, all with tests)
+
+1. **A cancelled or killed run was treated as success.** `Process.Kill`
+   ends robocopy with exit code -1, and the old check was only
+   `exitCode >= 8`, so a cancel went on to "All files copied" and the
+   finalize step (only the leftover check stopped a link). Cancel also
+   re-enabled Start before robocopy had exited, and the `Exited` handler
+   read the `_roboProcess` field, so a quick restart could finish the
+   wrong run. Now: `Robocopy.Interpret` makes any negative code or a cancel
+   request `Cancelled`; the window stays busy until the process has
+   exited; `CompleteTransfer` ignores any process that isn't the current one.
+2. **Relative paths made a wrongly-anchored link.** A typed `dest` became
+   `CreateSymbolicLink(source, "dest")`, a relative link resolved next to
+   the link, not where robocopy copied. Relative paths are now refused,
+   and both paths are normalised once and used for robocopy and the link.
+3. **A drive root as source was accepted** (moves the whole drive's
+   contents, then can't delete the root to link it). Refused.
+4. **Nesting via links wasn't seen** (`dest = <link to source>\x`, or
+   the source spelled through a link to its parent): robocopy would copy
+   into itself. Checked again with links resolved.
+5. **A dangling link or an existing file as destination was accepted.**
+   Refused (`IsReparsePoint` no longer needs `Directory.Exists` first).
+6. **Leftover listing could crash into the wrong message.** It re-ran a
+   recursive enumeration outside its own try, so an error there showed
+   "files moved, create the link with mklink" while files were still in
+   the source; it was also unbounded (UI freeze on many leftovers). Now
+   capped at 50 and inside the finalizer's checks.
+7. **Source delete was recursive.** After the emptiness check it's now
+   `Directory.Delete(source)` (non-recursive), so anything that appears
+   in between makes it fail instead of deleting it. The finalizer also
+   stops if the destination folder is missing, instead of linking to
+   nothing.
+8. **README promised a "destination not empty" warning that didn't
+   exist.** Added (also says same-name files get overwritten; "No" is
+   the default button). Exit code 16+ now has its own message instead of
+   "some files are in use".
+9. Output/exit events posting to a closing window could throw on a
+   thread-pool thread; now guarded (`PostToUi`).
+
+Refactors: the two Browse rows are one `CreatePathRow`, message boxes go
+through `ShowMessage`, stop logic for Cancel and window-close is one
+`StopRobocopy`, and the robocopy arguments are built in Core.
+
+Owner decisions still open: the disk check counts the full source even
+for a same-drive move (conservative, can refuse moves that would fit);
+a cancel that races robocopy finishing leaves the files at the
+destination with no link (safe, but the user has to `mklink` by hand).
 
 ## Two real bugs found from a user's pasted log (fixed by reading code, not by running it)
 
@@ -150,7 +208,7 @@ not a substitute for a real Windows run if you ever get one.
    whole folder) as "can't confirm safety, don't link" — so a fully
    successful, fully-moved transfer could end with the files correctly at
    the destination but no symlink, and a "please check manually" message.
-   Fix: check `Directory.Exists(source)` first; a missing source directory
+   Fix (now in `TransferFinalizer`): check `Directory.Exists(source)` first; a missing source directory
    is now treated as the (expected) success case rather than an error.
 
 ## The exe crashed at launch after the resx localization commit

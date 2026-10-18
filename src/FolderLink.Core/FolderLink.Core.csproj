@@ -7,4 +7,9 @@
     <RootNamespace>FolderLinkApp</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Lets the tests assert *which* refusal message came back. -->
+    <InternalsVisibleTo Include="FolderLink.Core.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -165,4 +165,18 @@ mklink /D "{1}" "{2}"</value>
   <data name="ClosingConfirmBody" xml:space="preserve">
     <value>搬移作業仍在進行中，確定要取消並離開嗎？</value>
   </data>
+  <data name="ConfirmMoveDestNotEmpty" xml:space="preserve">
+    <value>注意：目的資料夾不是空的。搬移的檔案會合併到其中，若目的資料夾內已有同名檔案，將會被覆寫。</value>
+  </data>
+  <data name="LogRoboErrorFatal" xml:space="preserve">
+    <value>Robocopy 無法執行搬移（例如無法建立目的資料夾或存取被拒）。請查看上方的訊息。</value>
+  </data>
+  <data name="ErrorRoboFatalBody" xml:space="preserve">
+    <value>Robocopy 無法執行搬移，原因請查看記錄。
+
+原始資料夾尚未被替換成捷徑，因此不會遺失任何檔案。</value>
+  </data>
+  <data name="LogLeftoverMore" xml:space="preserve">
+    <value>  ...（還有更多項目未列出）</value>
+  </data>
 </root>

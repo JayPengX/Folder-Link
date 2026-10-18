@@ -103,9 +103,13 @@ Under the hood the app runs:
 robocopy "<source>" "<destination>" /MOVE /E /IS /R:5 /W:5 /XJ /MT:8
 ```
 
-then, once everything copied cleanly, deletes the now-empty source
-folder and recreates it as a symbolic link (via .NET's
-`Directory.CreateSymbolicLink`) pointing at the destination.
+(both paths spelled out in full, without a trailing `\`), then, once
+robocopy reports success (exit code 0-7), checks that the source folder
+is really empty, removes it (an empty-folder-only delete, so it can never
+take files with it) and recreates it as a symbolic link (via .NET's
+`Directory.CreateSymbolicLink`) pointing at the full destination path.
+Any doubt along the way (robocopy exit code 8 or more, a cancel, anything
+left in the source, the destination missing) stops before that step.
 
 ## Scenarios It Handles
 
@@ -124,15 +128,24 @@ folder and recreates it as a symbolic link (via .NET's
   itself when it copies (also available via the browse dialog's "Make
   New Folder").
 - **Destination not empty / already has files** — the transfer still
-  runs (robocopy merges), but you're warned in the confirmation dialog
-  to double check that's what you want.
+  runs (robocopy merges), but the confirmation dialog warns you, and
+  says that a file there with the same name as one being moved will be
+  overwritten. "No" is the default button.
 - **Source or destination is itself already a link** — refused with an
   explanation, so you can't accidentally link a link.
 - **Destination is inside the source (or vice versa)** — refused, since
-  that would try to copy a folder into itself.
+  that would try to copy a folder into itself. This also catches the
+  same folder spelled differently: other letter case, a trailing `\`,
+  `..` in the path, or a path that goes through a link into the source.
+- **Relative paths, a drive or share root as the source, a destination
+  that is a file** — refused. A drive root (e.g. `D:\`) can't be
+  replaced by a link, so moving it would only empty the drive.
 - **Cancel mid-transfer** — stops robocopy immediately. Files already
   moved stay moved; nothing else is touched, and no link is created, so
-  you're never left with a half-empty, half-linked folder.
+  you're never left with a half-empty, half-linked folder. Run it again
+  to move the rest.
+- **Robocopy can't run the move at all** (exit code 16, e.g. access
+  denied) — reported as such; the original folder is left alone.
 - **App closed mid-transfer** — you're asked to confirm; confirming kills
   the copy safely, with the same guarantees as Cancel.
 - **Link creation fails after a successful move** (e.g. a stray
@@ -209,11 +222,12 @@ test suite, and publishes the exe in one step.
 The code is split into two parts:
 
 - **[`src/FolderLink.Core`](src/FolderLink.Core)** — plain, OS-agnostic
-  logic with no UI and no `robocopy` calls: the pre-flight checks that
-  decide whether a move is safe (same/nested folders, an already-linked
-  source or destination, disk space) and the recursive size calculation.
-  This is the part where a bug could mean lost or corrupted files, so
-  it's covered by a real, automated, passing test suite in
+  logic with no UI: the pre-flight checks that decide whether a move is
+  safe (`TransferSafety`), path normalisation and nesting/link checks
+  (`TransferPaths`), the robocopy command line and exit-code meaning
+  (`Robocopy`), and the final "remove the empty source, create the link"
+  step (`TransferFinalizer`) — every decision that could lose files.
+  It's covered by a real, automated, passing test suite in
   [`src/FolderLink.Core.Tests`](src/FolderLink.Core.Tests), which runs
   on Linux — run it with:
   ```
@@ -224,13 +238,14 @@ The code is split into two parts:
   (`Directory.CreateSymbolicLink` is cross-platform in .NET 6+ and works
   fine on Linux for this purpose), and check every refusal case (same
   folder, nested either direction, already a link, disk-space
-  arithmetic, a sibling-folder-name-prefix edge case) alongside the
-  normal, allowed case. One gap: the disk-space-insufficient refusal
-  path has no test, since simulating a full disk without a mock
-  `DriveInfo` is impractical with the current code.
-- **[`src/FolderLink`](src/FolderLink)** — the WinForms UI, the actual
-  `robocopy.exe` invocation and output parsing, admin elevation via the
-  app manifest, and the finalize-and-link step. This part is
+  arithmetic through an injectable free-space function, a
+  sibling-folder-name-prefix edge case, links and link cycles), every
+  robocopy exit code, every state the finalize step can find, and that
+  both language files carry every string — alongside the normal,
+  allowed case.
+- **[`src/FolderLink`](src/FolderLink)** — the WinForms UI, starting
+  `robocopy.exe` and showing its output, and admin elevation via the
+  app manifest. This part is
   Windows-only — robocopy isn't available on Linux and WinForms can't
   render there — so it is **not covered by automated tests**. It has
   been verified by compiling cleanly and by careful manual code review,
@@ -255,9 +270,16 @@ fixed (see that folder's own README for details).
 ## Known Limitations
 
 - Only tested against local NTFS folders and standard file moves; very
-  unusual setups (reparse points *inside* the source tree, files with
-  paths near Windows' `MAX_PATH` limit, etc.) aren't specially handled
-  beyond what `robocopy` itself does.
+  unusual setups (files with paths near Windows' `MAX_PATH` limit, etc.)
+  aren't specially handled beyond what `robocopy` itself does. Links or
+  junctions *inside* the source are not moved (`/XJ`), so they stay
+  behind and the tool stops without creating the link; move or remove
+  them yourself and run it again.
+- The nesting check doesn't expand 8.3 short names (`PROGRA~1`) or see
+  that a mapped drive and its `\\server\share` path are the same place.
+- The disk-space check counts the whole source even when the
+  destination is on the same drive, where robocopy frees space as it
+  goes, so it can refuse a same-drive move that would actually fit.
 - No code signing (would require a paid certificate) — see
   [Is This Safe?](#is-this-safe) for why the SmartScreen/Defender
   warning on first run is expected and not a sign of an actual threat.
