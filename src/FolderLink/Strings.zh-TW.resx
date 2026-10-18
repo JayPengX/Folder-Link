@@ -183,4 +183,51 @@ mklink /D "{1}" "{2}"</value>
   <data name="LogLeftoverMore" xml:space="preserve">
     <value>  ...（還有更多項目未列出）</value>
   </data>
+  <data name="RestoreButton" xml:space="preserve">
+    <value>移回原處...</value>
+  </data>
+  <data name="ConfirmRestoreTitle" xml:space="preserve">
+    <value>確認移回</value>
+  </data>
+  <data name="ConfirmRestoreBody" xml:space="preserve">
+    <value>這會把以下位置的所有檔案和子資料夾：
+{0}
+
+移回原本的位置：
+{1}
+
+並移除那裡的捷徑，讓它變回一般資料夾。
+
+要繼續嗎？</value>
+  </data>
+  <data name="LogRestoreStarting" xml:space="preserve">
+    <value>正在移回：
+  從：{0}
+  到：{1}
+</value>
+  </data>
+  <data name="LogRestoreSwapFailed" xml:space="preserve">
+    <value>無法把捷徑換成資料夾，沒有搬移任何檔案：{0}</value>
+  </data>
+  <data name="LogRestoreDone" xml:space="preserve">
+    <value>所有檔案都已移回 {0}。捷徑已移除，空的資料夾 {1} 也已刪除。</value>
+  </data>
+  <data name="RestoreDoneBody" xml:space="preserve">
+    <value>移回完成。
+
+所有檔案現在都位於：
+{0}</value>
+  </data>
+  <data name="LogRestoreIncomplete" xml:space="preserve">
+    <value>有些檔案沒有移回。已移回的檔案在 {1}，其餘仍在 {0}。請關閉正在使用這些檔案的程式，再用檔案總管把其餘檔案移到 {1}。</value>
+  </data>
+  <data name="ErrorRestoreIncompleteBody" xml:space="preserve">
+    <value>有些檔案無法移回，記錄中列出了它們的位置。</value>
+  </data>
+  <data name="LogRestoreLeftover" xml:space="preserve">
+    <value>注意：{0} 裡仍有項目，所以保留了這個資料夾：</value>
+  </data>
+  <data name="LogRestoreCannotVerify" xml:space="preserve">
+    <value>檔案已移回 {0}，但無法檢查 {1}，所以保留了它：{2}</value>
+  </data>
 </root>

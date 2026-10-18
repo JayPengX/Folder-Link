@@ -159,5 +159,5 @@ public static class TransferSafety
         return null;
     }
 
-    private static double ToGb(long bytes) => Math.Round(bytes / 1024.0 / 1024 / 1024, 2);
+    internal static double ToGb(long bytes) => Math.Round(bytes / 1024.0 / 1024 / 1024, 2);
 }

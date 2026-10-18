@@ -53,6 +53,11 @@ internal static class CoreStrings
     internal static string PathInvalid => Get(nameof(PathInvalid));
     internal static string SourceIsDriveRoot => Get(nameof(SourceIsDriveRoot));
     internal static string DestinationIsAFile => Get(nameof(DestinationIsAFile));
+    internal static string LinkPathRequired => Get(nameof(LinkPathRequired));
+    internal static string RestoreNotALink => Get(nameof(RestoreNotALink));
+    internal static string RestoreTargetMissing => Get(nameof(RestoreTargetMissing));
+    internal static string RestoreTargetIsLink => Get(nameof(RestoreTargetIsLink));
+    internal static string RestoreNested => Get(nameof(RestoreNested));
 
     private static string Get(string name) => ResourceManager.GetString(name) ?? name;
 }

@@ -65,6 +65,32 @@ public sealed class WindowsEndToEndTests : IDisposable
     }
 
     [Fact]
+    public void Moves_a_linked_folder_back_and_removes_the_link()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var source = Path.Combine(_root, "來源 folder");
+        var destination = Path.Combine(_root, "dest", "moved");
+        Directory.CreateDirectory(Path.Combine(source, "子資料夾", "empty"));
+        File.WriteAllText(Path.Combine(source, "子資料夾", "中文.txt"), "你好");
+        var src = TransferPaths.Normalize(source);
+        var dst = TransferPaths.Normalize(destination);
+        Assert.Equal(0, Run("robocopy.exe", Robocopy.BuildArguments(src, dst)) & ~7);
+        Assert.Equal(FinalizeStatus.Linked, TransferFinalizer.ReplaceSourceWithLink(src, dst).Status);
+
+        Assert.Null(LinkRestorer.TestRestore(src, out var target));
+        Assert.Equal(dst, target, ignoreCase: true);
+        Assert.Null(LinkRestorer.SwapLinkForFolder(src, target));
+        var exit = Run("robocopy.exe", Robocopy.BuildArguments(target, src));
+        Assert.Equal(RobocopyOutcome.Succeeded, Robocopy.Interpret(exit, cancelRequested: false));
+        Assert.Equal(FinalizeStatus.Linked, LinkRestorer.RemoveEmptyTarget(target).Status);
+
+        Assert.Null(new DirectoryInfo(src).LinkTarget);
+        Assert.Equal("你好", File.ReadAllText(Path.Combine(src, "子資料夾", "中文.txt")));
+        Assert.True(Directory.Exists(Path.Combine(src, "子資料夾", "empty")));
+        Assert.False(Directory.Exists(dst));
+    }
+
+    [Fact]
     public void Refuses_a_drive_root_and_a_destination_inside_the_source()
     {
         if (!OperatingSystem.IsWindows()) return;

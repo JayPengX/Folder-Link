@@ -188,4 +188,51 @@ The original folder has not been replaced with a shortcut, so no files will be l
   <data name="LogLeftoverMore" xml:space="preserve">
     <value>  ... (more items not shown)</value>
   </data>
+  <data name="RestoreButton" xml:space="preserve">
+    <value>Move Back...</value>
+  </data>
+  <data name="ConfirmRestoreTitle" xml:space="preserve">
+    <value>Confirm Move Back</value>
+  </data>
+  <data name="ConfirmRestoreBody" xml:space="preserve">
+    <value>This will move all files and subfolders from:
+{0}
+
+back to their original place:
+{1}
+
+and remove the shortcut there, so it is a normal folder again.
+
+Do you want to continue?</value>
+  </data>
+  <data name="LogRestoreStarting" xml:space="preserve">
+    <value>Moving back:
+  From: {0}
+  To: {1}
+</value>
+  </data>
+  <data name="LogRestoreSwapFailed" xml:space="preserve">
+    <value>The shortcut could not be replaced with a folder, so nothing was moved: {0}</value>
+  </data>
+  <data name="LogRestoreDone" xml:space="preserve">
+    <value>All files are back in {0}. The shortcut is gone and the empty folder {1} was removed.</value>
+  </data>
+  <data name="RestoreDoneBody" xml:space="preserve">
+    <value>Move back complete.
+
+All files are back in:
+{0}</value>
+  </data>
+  <data name="LogRestoreIncomplete" xml:space="preserve">
+    <value>Not every file was moved back. Files already moved are in {1}; the rest are still in {0}. Close any programs using them, then move the rest into {1} with File Explorer.</value>
+  </data>
+  <data name="ErrorRestoreIncompleteBody" xml:space="preserve">
+    <value>Some files could not be moved back. The log lists where they are.</value>
+  </data>
+  <data name="LogRestoreLeftover" xml:space="preserve">
+    <value>Warning: items are still in {0}, so that folder was kept:</value>
+  </data>
+  <data name="LogRestoreCannotVerify" xml:space="preserve">
+    <value>Files are back in {0}, but {1} could not be checked, so it was kept: {2}</value>
+  </data>
 </root>

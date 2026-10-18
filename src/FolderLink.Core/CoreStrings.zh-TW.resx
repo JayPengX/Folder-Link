@@ -61,4 +61,19 @@
   <data name="DestinationIsAFile" xml:space="preserve">
     <value>目的位置是一個現有的檔案，而不是資料夾。請選擇一個資料夾作為目的位置。</value>
   </data>
+  <data name="LinkPathRequired" xml:space="preserve">
+    <value>請在「來源」欄輸入現在是捷徑的資料夾（檔案原本的位置）。</value>
+  </data>
+  <data name="RestoreNotALink" xml:space="preserve">
+    <value>{0} 不是搬移後留下的捷徑，沒有可以移回的檔案。</value>
+  </data>
+  <data name="RestoreTargetMissing" xml:space="preserve">
+    <value>捷徑指向的 {0} 已不存在，沒有可以移回的檔案。</value>
+  </data>
+  <data name="RestoreTargetIsLink" xml:space="preserve">
+    <value>捷徑指向的 {0} 本身也是捷徑，請手動移回檔案。</value>
+  </data>
+  <data name="RestoreNested" xml:space="preserve">
+    <value>捷徑和它指向的資料夾互相包含，無法移回檔案。</value>
+  </data>
 </root>

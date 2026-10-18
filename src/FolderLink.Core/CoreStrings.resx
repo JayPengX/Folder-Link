@@ -69,4 +69,19 @@ Needed: {1} GB, Available: {2} GB</value>
   <data name="DestinationIsAFile" xml:space="preserve">
     <value>The destination is an existing file, not a folder. Please choose a folder as the destination.</value>
   </data>
+  <data name="LinkPathRequired" xml:space="preserve">
+    <value>Please enter the folder that is now a shortcut (the original place of the files) in the Source box.</value>
+  </data>
+  <data name="RestoreNotALink" xml:space="preserve">
+    <value>{0} is not a shortcut made by a move, so there is nothing to move back.</value>
+  </data>
+  <data name="RestoreTargetMissing" xml:space="preserve">
+    <value>The shortcut points at {0}, which no longer exists, so there is nothing to move back.</value>
+  </data>
+  <data name="RestoreTargetIsLink" xml:space="preserve">
+    <value>The shortcut points at {0}, which is itself a shortcut. Please move the files back by hand.</value>
+  </data>
+  <data name="RestoreNested" xml:space="preserve">
+    <value>The shortcut and the folder it points at are inside each other, so the files can't be moved back.</value>
+  </data>
 </root>

@@ -79,6 +79,17 @@ internal static class Strings
     internal static string LogCancelledByUser => Get(nameof(LogCancelledByUser));
     internal static string LogCancelledAfterDone => Get(nameof(LogCancelledAfterDone));
     internal static string ClosingConfirmBody => Get(nameof(ClosingConfirmBody));
+    internal static string RestoreButton => Get(nameof(RestoreButton));
+    internal static string ConfirmRestoreTitle => Get(nameof(ConfirmRestoreTitle));
+    internal static string ConfirmRestoreBody => Get(nameof(ConfirmRestoreBody));
+    internal static string LogRestoreStarting => Get(nameof(LogRestoreStarting));
+    internal static string LogRestoreSwapFailed => Get(nameof(LogRestoreSwapFailed));
+    internal static string LogRestoreDone => Get(nameof(LogRestoreDone));
+    internal static string RestoreDoneBody => Get(nameof(RestoreDoneBody));
+    internal static string LogRestoreIncomplete => Get(nameof(LogRestoreIncomplete));
+    internal static string ErrorRestoreIncompleteBody => Get(nameof(ErrorRestoreIncompleteBody));
+    internal static string LogRestoreLeftover => Get(nameof(LogRestoreLeftover));
+    internal static string LogRestoreCannotVerify => Get(nameof(LogRestoreCannotVerify));
 
     private static string Get(string name) => ResourceManager.GetString(name) ?? name;
 }

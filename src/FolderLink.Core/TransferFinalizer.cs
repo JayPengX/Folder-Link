@@ -88,11 +88,11 @@ public static class TransferFinalizer
         }
     }
 
-    private static FinalizeResult Leftover(IReadOnlyList<string> items, bool more) =>
+    internal static FinalizeResult Leftover(IReadOnlyList<string> items, bool more) =>
         new(FinalizeStatus.LeftoverItems, items, more, null);
 
     /// <summary>Walks the tree (not following links), stopping after <paramref name="limit"/> entries.</summary>
-    private static List<string> ListLeftovers(string root, int limit)
+    internal static List<string> ListLeftovers(string root, int limit)
     {
         var found = new List<string>();
         var stack = new Stack<string>();

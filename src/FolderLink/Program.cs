@@ -65,7 +65,8 @@ internal static class Program
         // the app vanish with no visible error at all. Show it instead.
         try
         {
-            Application.Run(new MainForm());
+            // A folder dropped on FolderLink.exe (or passed by "Send to") fills the Source box.
+            Application.Run(new MainForm(Environment.GetCommandLineArgs().Skip(1).FirstOrDefault()));
         }
         catch (Exception ex)
         {
@@ -92,6 +93,7 @@ internal sealed class MainForm : Form
     private readonly TextBox _destBox;
     private readonly Button _startButton;
     private readonly Button _cancelButton;
+    private readonly Button _restoreButton;
     private readonly Label _statusLabel;
     private readonly ProgressBar _progressBar;
     private readonly TextBox _logBox;
@@ -100,7 +102,7 @@ internal sealed class MainForm : Form
     private Process? _roboProcess;
     private bool _cancelRequested;
 
-    public MainForm()
+    public MainForm(string? initialSource = null)
     {
         Text = Strings.FormTitle;
         // This form is laid out with fixed pixel coordinates rather than a
@@ -122,6 +124,7 @@ internal sealed class MainForm : Form
         var (sourceLabel, sourceBox, sourceBrowse) = CreatePathRow(Strings.SourceFolderLabel, Strings.SourceBrowseDialogDescription, 20);
         var (destLabel, destBox, destBrowse) = CreatePathRow(Strings.DestFolderLabel, Strings.DestBrowseDialogDescription, 55);
         _sourceBox = sourceBox;
+        if (!string.IsNullOrWhiteSpace(initialSource)) _sourceBox.Text = initialSource.Trim();
         _destBox = destBox;
 
         _startButton = new Button
@@ -145,6 +148,19 @@ internal sealed class MainForm : Form
             Enabled = false,
         };
         _cancelButton.Click += (_, _) => StopRobocopy();
+
+        // Undoes a move: the Source box holds the folder that is now a link.
+        // Kept at the far right, away from Start.
+        _restoreButton = new Button
+        {
+            Text = Strings.RestoreButton,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowOnly,
+            MinimumSize = new Size(120, 34),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+        };
+        _restoreButton.Location = new Point(ClientSize.Width - Gutter - Math.Max(120, _restoreButton.PreferredSize.Width), 95);
+        _restoreButton.Click += (_, _) => StartRestore(_sourceBox.Text.Trim());
 
         _statusLabel = new Label
         {
@@ -176,7 +192,7 @@ internal sealed class MainForm : Form
         {
             sourceLabel, _sourceBox, sourceBrowse,
             destLabel, _destBox, destBrowse,
-            _startButton, _cancelButton,
+            _startButton, _cancelButton, _restoreButton,
             _statusLabel, _progressBar, _logBox,
         });
 
@@ -221,8 +237,17 @@ internal sealed class MainForm : Form
             using var dlg = new FolderBrowserDialog { Description = dialogDescription };
             if (dlg.ShowDialog(this) == DialogResult.OK) box.Text = dlg.SelectedPath;
         };
+
+        // A folder dragged from File Explorer onto the box fills it in.
+        box.AllowDrop = true;
+        box.DragEnter += (_, e) => e.Effect = DroppedFolder(e) != null ? DragDropEffects.Copy : DragDropEffects.None;
+        box.DragDrop += (_, e) => { if (DroppedFolder(e) is string folder) box.Text = folder; };
         return (label, box, browse);
     }
+
+    /// <summary>The one folder being dragged, or null for files or several items.</summary>
+    private static string? DroppedFolder(DragEventArgs e) =>
+        e.Data?.GetData(DataFormats.FileDrop) is string[] { Length: 1 } paths && Directory.Exists(paths[0]) ? paths[0] : null;
 
     private void SetStatus(string text) => _statusLabel.Text = string.Format(Strings.StatusFormat, text);
 
@@ -251,6 +276,7 @@ internal sealed class MainForm : Form
         _sourceBox.Enabled = !busy;
         _destBox.Enabled = !busy;
         _cancelButton.Enabled = busy;
+        _restoreButton.Enabled = !busy;
         _progressBar.Style = busy ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
         if (!busy) _progressBar.Value = 0;
     }
@@ -294,6 +320,16 @@ internal sealed class MainForm : Form
 
         _logBox.Clear();
         LogLine(string.Format(Strings.LogTransferStarting, source, destination));
+        RunRobocopy(source, destination, process => CompleteTransfer(process, source, destination));
+    }
+
+    /// <summary>
+    /// Starts robocopy moving <paramref name="from"/>'s contents into
+    /// <paramref name="to"/>; <paramref name="complete"/> runs on the UI
+    /// thread once it has exited.
+    /// </summary>
+    private void RunRobocopy(string from, string to, Action<Process> complete)
+    {
         SetStatus(Strings.StatusCopying);
         SetBusy(true);
         _cancelRequested = false;
@@ -313,7 +349,7 @@ internal sealed class MainForm : Form
             StandardOutputEncoding = Program.OemEncoding,
             StandardErrorEncoding = Program.OemEncoding,
         };
-        foreach (var arg in Robocopy.BuildArguments(source, destination))
+        foreach (var arg in Robocopy.BuildArguments(from, to))
             psi.ArgumentList.Add(arg);
 
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
@@ -322,7 +358,7 @@ internal sealed class MainForm : Form
         process.Exited += (_, _) =>
         {
             process.WaitForExit(); // ensures redirected streams are fully drained first
-            PostToUi(() => CompleteTransfer(process, source, destination));
+            PostToUi(() => complete(process));
         };
         _roboProcess = process;
 
@@ -341,13 +377,22 @@ internal sealed class MainForm : Form
         }
     }
 
-    private void CompleteTransfer(Process process, string source, string destination)
+    /// <summary>
+    /// The exit code of the run that just ended, or null when it isn't the
+    /// current run (only the current one may finish; anything else is stale).
+    /// </summary>
+    private int? TakeExitCode(Process process)
     {
-        // Only the run that is current may finish; anything else is stale.
-        if (!ReferenceEquals(process, _roboProcess)) return;
+        if (!ReferenceEquals(process, _roboProcess)) return null;
         _roboProcess = null;
         var exitCode = process.ExitCode;
         process.Dispose();
+        return exitCode;
+    }
+
+    private void CompleteTransfer(Process process, string source, string destination)
+    {
+        if (TakeExitCode(process) is not int exitCode) return;
 
         switch (Robocopy.Interpret(exitCode, _cancelRequested))
         {
@@ -407,6 +452,83 @@ internal sealed class MainForm : Form
                 LogLine(string.Format(Strings.LogFinalizeError, result.Error));
                 EndRun(Strings.StatusFinalizeFailed);
                 ShowMessage(string.Format(Strings.FinalizeErrorBody, result.Error, source, destination), MessageBoxIcon.Error);
+                break;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Move back: the same robocopy move in the other direction, after the
+    // link is swapped for an empty folder. Decisions live in LinkRestorer.
+    // ------------------------------------------------------------------
+
+    private void StartRestore(string linkInput)
+    {
+        var error = LinkRestorer.TestRestore(linkInput, out var target);
+        if (error != null)
+        {
+            ShowMessage(error, MessageBoxIcon.Error);
+            return;
+        }
+        var link = TransferPaths.Normalize(linkInput);
+
+        var confirm = MessageBox.Show(this, string.Format(Strings.ConfirmRestoreBody, target, link), Strings.ConfirmRestoreTitle,
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+        if (confirm != DialogResult.Yes) return;
+
+        _logBox.Clear();
+        LogLine(string.Format(Strings.LogRestoreStarting, target, link));
+        if (LinkRestorer.SwapLinkForFolder(link, target) is string swapError)
+        {
+            LogLine(string.Format(Strings.LogRestoreSwapFailed, swapError));
+            ShowMessage(string.Format(Strings.LogRestoreSwapFailed, swapError), MessageBoxIcon.Error);
+            return;
+        }
+        RunRobocopy(target, link, process => CompleteRestore(process, target, link));
+    }
+
+    private void CompleteRestore(Process process, string target, string link)
+    {
+        if (TakeExitCode(process) is not int exitCode) return;
+
+        var outcome = Robocopy.Interpret(exitCode, _cancelRequested);
+        if (outcome != RobocopyOutcome.Succeeded)
+        {
+            // The link is already gone and both places are real folders, so
+            // nothing is lost: say where the files are.
+            if (outcome != RobocopyOutcome.Cancelled)
+                LogLine(string.Format(Strings.LogRoboError, exitCode));
+            LogLine(string.Format(Strings.LogRestoreIncomplete, target, link));
+            if (outcome == RobocopyOutcome.Cancelled)
+            {
+                EndRun(Strings.StatusCancelled);
+                return;
+            }
+            EndRun(Strings.StatusCompletedWithErrors);
+            ShowMessage(Strings.ErrorRestoreIncompleteBody, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var result = LinkRestorer.RemoveEmptyTarget(target);
+        switch (result.Status)
+        {
+            case FinalizeStatus.Linked:
+                LogLine(string.Format(Strings.LogRestoreDone, link, target));
+                EndRun(Strings.StatusCompleted);
+                ShowMessage(string.Format(Strings.RestoreDoneBody, link), MessageBoxIcon.Information);
+                break;
+
+            case FinalizeStatus.LeftoverItems:
+                LogLine(string.Format(Strings.LogRestoreLeftover, target));
+                foreach (var entry in result.Leftovers)
+                    LogLine($"  {entry}");
+                if (result.MoreLeftovers)
+                    LogLine(Strings.LogLeftoverMore);
+                EndRun(Strings.StatusCompletedLeftoverFiles);
+                break;
+
+            default:
+                LogLine(string.Format(Strings.LogRestoreCannotVerify, link, target, result.Error));
+                EndRun(Strings.StatusCompletedNeedsManualCheck);
                 break;
         }
     }

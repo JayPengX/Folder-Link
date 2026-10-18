@@ -90,6 +90,21 @@ problem. Close whatever has that file open and click **Start Transfer
 (開始搬移)** again — files already moved won't be touched a second time,
 so the retry only deals with what's left.
 
+You can also drag a folder from File Explorer onto either path box, or
+drop it onto `FolderLink.exe` itself to open the tool with that folder
+as the source.
+
+### Moving a folder back
+
+To undo a move, put the folder that is now a link (its original path)
+in **Source folder (來源資料夾)** and click **Move Back... (移回原處...)**.
+After you confirm, the tool replaces the link with an empty folder,
+moves every file back into it with the same robocopy command, and
+removes the now-empty folder the files were moved to. It refuses
+anything that isn't a link to an existing folder. If some files can't
+be moved back (for example they're in use), nothing is deleted: the log
+says which folder still holds them.
+
 If Windows shows the blue "Windows protected your PC" SmartScreen
 screen, that's expected for a new, unsigned tool and not a sign of an
 actual detected threat — click **More info**, then **Run anyway**. See
