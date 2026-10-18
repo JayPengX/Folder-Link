@@ -300,7 +300,6 @@ fixed (see that folder's own README for details).
 - No code signing (would require a paid certificate) — see
   [Is This Safe?](#is-this-safe) for why the SmartScreen/Defender
   warning on first run is expected and not a sign of an actual threat.
-- No custom app icon — the `.exe` uses the .NET default.
 - The exe is large (~69 MB) because it's self-contained (it bundles its
   own .NET runtime so it runs on a bare Windows machine with nothing
   preinstalled). A framework-dependent build would be much smaller but

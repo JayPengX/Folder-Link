@@ -14,8 +14,10 @@
          exe dies at launch with no window. -->
     <RootNamespace>FolderLinkApp</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Drawn by scripts/make-icon.py. -->
+    <ApplicationIcon>assets\FolderLink.ico</ApplicationIcon>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <Product>FolderLink</Product>
     <AssemblyTitle>FolderLink</AssemblyTitle>
     <Description>移動資料夾內容並在原位置保留符號連結</Description>

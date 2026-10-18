@@ -105,6 +105,9 @@ internal sealed class MainForm : Form
     public MainForm(string? initialSource = null)
     {
         Text = Strings.FormTitle;
+        // The exe's own icon (ApplicationIcon) in the title bar and taskbar too.
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
+        catch { /* keep the default icon */ }
         // This form is laid out with fixed pixel coordinates rather than a
         // designer. AutoScaleMode.Dpi only actually scales anything if it
         // has a recorded design-time baseline to scale from — without

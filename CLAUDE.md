@@ -320,7 +320,7 @@ were also added:
 - No code signing (would need a paid cert, out of scope so far) — the
   README's SmartScreen/Defender section explains this tradeoff to users,
   don't re-litigate it without new information.
-- No custom app icon (`.exe` uses the .NET default).
+- The app icon (`src/FolderLink/assets/FolderLink.ico`, a folder with a link badge) is drawn by `scripts/make-icon.py` (Pillow); edit the script and re-run it rather than editing the .ico.
 - The exe is large (~69 MB) because it's self-contained; framework-
   dependent publishing would shrink it a lot but requires the .NET 8
   Desktop Runtime pre-installed on the user's machine, which most
