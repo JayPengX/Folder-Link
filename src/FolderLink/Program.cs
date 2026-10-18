@@ -354,7 +354,9 @@ internal sealed class MainForm : Form
             case RobocopyOutcome.Cancelled:
                 // Never go on to delete/link after a cancel, whatever robocopy
                 // managed to do before it was stopped.
-                LogLine(Strings.LogCancelledByUser);
+                LogLine(Robocopy.FinishedBeforeCancel(exitCode)
+                    ? string.Format(Strings.LogCancelledAfterDone, destination, source)
+                    : Strings.LogCancelledByUser);
                 EndRun(Strings.StatusCancelled);
                 return;
 

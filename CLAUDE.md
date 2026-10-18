@@ -94,7 +94,7 @@ and the hash *doesn't* change.
 
 Every decision that could lose files now lives in `src/FolderLink.Core`
 (plain .NET, runs on Linux) and is tested in `src/FolderLink.Core.Tests`
-(`dotnet test`, 99 tests, real temp folders and real symlinks, no mocks):
+(`dotnet test`, 104 tests, real temp folders and real symlinks, no mocks):
 
 - `TransferSafety.TestPreFlight(source, destination, freeSpace?)` — every
   refusal. `freeSpace` maps a volume root to free bytes (null = unknown)
@@ -165,10 +165,12 @@ Refactors: the two Browse rows are one `CreatePathRow`, message boxes go
 through `ShowMessage`, stop logic for Cancel and window-close is one
 `StopRobocopy`, and the robocopy arguments are built in Core.
 
-Owner decisions still open: the disk check counts the full source even
-for a same-drive move (conservative, can refuse moves that would fit);
+Owner decisions (October 2026): the disk check counts the full source even
+for a same-drive move, and the owner chose to keep it strict; merging into a
+destination overwrites same-named files after the warning (owner's choice);
 a cancel that races robocopy finishing leaves the files at the
-destination with no link (safe, but the user has to `mklink` by hand).
+destination with no link (safe; since October 2026 the log says so and
+gives the `mklink /D` line to run, `Robocopy.FinishedBeforeCancel`).
 
 ## Two real bugs found from a user's pasted log (fixed by reading code, not by running it)
 

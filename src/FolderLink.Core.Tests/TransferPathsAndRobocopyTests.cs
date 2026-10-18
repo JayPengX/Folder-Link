@@ -126,6 +126,19 @@ public sealed class RobocopyTests
         Assert.Equal(RobocopyOutcome.Cancelled, Robocopy.Interpret(code, cancelRequested: true));
     }
 
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(7, true)]
+    [InlineData(8, false)]
+    [InlineData(16, false)]
+    [InlineData(-1, false)]
+    public void A_cancel_that_came_after_robocopy_finished_is_told_apart(int code, bool finished)
+    {
+        // 0-7: robocopy was done before the kill landed, so every file is at
+        // the destination (the user is told where, and how to link by hand).
+        Assert.Equal(finished, Robocopy.FinishedBeforeCancel(code));
+    }
+
     [Fact]
     public void Arguments_start_with_source_and_destination_and_move()
     {

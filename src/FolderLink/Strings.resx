@@ -163,6 +163,10 @@ A symbolic link has been created at the original location, so existing shortcuts
 You can create the shortcut manually, for example:
 mklink /D "{1}" "{2}"</value>
   </data>
+  <data name="LogCancelledAfterDone" xml:space="preserve">
+    <value>
+Cancelled, but robocopy had already finished: every file is now in {0}, and no shortcut was created. To make it by hand, run in an administrator Command Prompt: mklink /D "{1}" "{0}"</value>
+  </data>
   <data name="LogCancelledByUser" xml:space="preserve">
     <value>
 The operation was cancelled by the user. Files that were already copied have been removed from the source; the remaining files are unchanged, and no shortcut has been created.</value>

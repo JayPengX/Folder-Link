@@ -52,4 +52,12 @@ public static class Robocopy
         if (exitCode >= 8) return RobocopyOutcome.SomeFilesFailed;
         return RobocopyOutcome.Succeeded;
     }
+
+    /// <summary>
+    /// A cancelled run whose robocopy had already finished on its own (exit
+    /// code 0-7: the kill came too late). Still a cancel, so nothing is
+    /// deleted or linked, but every file is at the destination, which the
+    /// user is told along with how to make the link by hand.
+    /// </summary>
+    public static bool FinishedBeforeCancel(int exitCode) => exitCode >= 0 && exitCode < 8;
 }

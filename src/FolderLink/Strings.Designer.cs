@@ -77,6 +77,7 @@ internal static class Strings
     internal static string LogFinalizeError => Get(nameof(LogFinalizeError));
     internal static string FinalizeErrorBody => Get(nameof(FinalizeErrorBody));
     internal static string LogCancelledByUser => Get(nameof(LogCancelledByUser));
+    internal static string LogCancelledAfterDone => Get(nameof(LogCancelledAfterDone));
     internal static string ClosingConfirmBody => Get(nameof(ClosingConfirmBody));
 
     private static string Get(string name) => ResourceManager.GetString(name) ?? name;

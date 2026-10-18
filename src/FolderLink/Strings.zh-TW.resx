@@ -158,6 +158,10 @@ Robocopy 回報發生錯誤（結束代碼：{0}）。</value>
 您可以手動建立捷徑，例如：
 mklink /D "{1}" "{2}"</value>
   </data>
+  <data name="LogCancelledAfterDone" xml:space="preserve">
+    <value>
+已取消，但 robocopy 在取消前已經完成：所有檔案都已在 {0}，且尚未建立捷徑。如要自行建立，請以系統管理員身分開啟命令提示字元並執行：mklink /D "{1}" "{0}"</value>
+  </data>
   <data name="LogCancelledByUser" xml:space="preserve">
     <value>
 使用者已取消操作。已複製的檔案已從來源移除；其餘未處理的檔案維持原狀，且尚未建立捷徑。</value>
