@@ -331,7 +331,7 @@ internal sealed class MainForm : Form
     /// <paramref name="to"/>; <paramref name="complete"/> runs on the UI
     /// thread once it has exited.
     /// </summary>
-    private void RunRobocopy(string from, string to, Action<Process> complete)
+    private void RunRobocopy(string from, string to, Action<Process> complete, Action? startFailed = null)
     {
         SetStatus(Strings.StatusCopying);
         SetBusy(true);
@@ -376,6 +376,7 @@ internal sealed class MainForm : Form
             _roboProcess = null;
             process.Dispose();
             LogLine(string.Format(Strings.LogRoboStartFailed, ex.Message));
+            startFailed?.Invoke();
             EndRun(Strings.StatusStartFailed);
         }
     }
@@ -486,7 +487,9 @@ internal sealed class MainForm : Form
             ShowMessage(string.Format(Strings.LogRestoreSwapFailed, swapError), MessageBoxIcon.Error);
             return;
         }
-        RunRobocopy(target, link, process => CompleteRestore(process, target, link));
+        // If robocopy can't even start, nothing moved: put the link back.
+        RunRobocopy(target, link, process => CompleteRestore(process, target, link),
+            () => LinkRestorer.PutLinkBack(link, target));
     }
 
     private void CompleteRestore(Process process, string target, string link)

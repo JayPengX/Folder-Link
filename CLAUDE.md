@@ -94,7 +94,7 @@ and the hash *doesn't* change.
 
 Every decision that could lose files now lives in `src/FolderLink.Core`
 (plain .NET, runs on Linux) and is tested in `src/FolderLink.Core.Tests`
-(`dotnet test`, 114 tests, real temp folders and real symlinks, no mocks):
+(`dotnet test`, 115 tests, real temp folders and real symlinks, no mocks):
 
 - `TransferSafety.TestPreFlight(source, destination, freeSpace?)` — every
   refusal. `freeSpace` maps a volume root to free bytes (null = unknown)
@@ -111,7 +111,8 @@ Every decision that could lose files now lives in `src/FolderLink.Core`
 - `LinkRestorer` — "Move back" (undo a move): `TestRestore` (must be a
   link to an existing real folder, not nested, disk space when the
   volumes differ), `SwapLinkForFolder` (removes only the link, puts it
-  back if the empty folder can't be made), `RemoveEmptyTarget` (after
+  back if the empty folder can't be made), `PutLinkBack` (when robocopy
+  never started), `RemoveEmptyTarget` (after
   robocopy moved the files back; non-recursive, lists leftovers).
   The Windows CI test moves a folder and then moves it back.
 - `ResourceFileTests` parses both projects' `.resx` files and hand-written

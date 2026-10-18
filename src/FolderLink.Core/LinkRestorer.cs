@@ -107,6 +107,29 @@ public static class LinkRestorer
     }
 
     /// <summary>
+    /// Undoes <see cref="SwapLinkForFolder"/> when nothing was moved: the
+    /// empty folder (only if still empty) becomes the link again. True when
+    /// the link is back.
+    /// </summary>
+    public static bool PutLinkBack(string link, string target)
+    {
+        try
+        {
+            if (Directory.Exists(link) && !TransferSafety.IsReparsePoint(link))
+            {
+                if (Directory.EnumerateFileSystemEntries(link).Any()) return false;
+                Directory.Delete(link, recursive: false);
+            }
+            Directory.CreateSymbolicLink(link, target);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// After robocopy moved everything back: remove the folder the files
     /// came from, only if it is empty. robocopy /MOVE usually removed it
     /// already. Linked = done; LeftoverItems / CannotVerify keep it.

@@ -95,6 +95,20 @@ public sealed class LinkRestorerTests : IDisposable
     }
 
     [Fact]
+    public void Puts_the_link_back_only_over_an_empty_folder()
+    {
+        var (link, target) = Moved();
+        LinkRestorer.SwapLinkForFolder(link, target);
+        Assert.True(LinkRestorer.PutLinkBack(link, target));
+        Assert.Equal(target, new DirectoryInfo(link).LinkTarget);
+
+        LinkRestorer.SwapLinkForFolder(link, target);
+        File.WriteAllText(Path.Combine(link, "new.txt"), "new");
+        Assert.False(LinkRestorer.PutLinkBack(link, target));
+        Assert.True(File.Exists(Path.Combine(link, "new.txt")));
+    }
+
+    [Fact]
     public void Swap_refuses_a_real_folder()
     {
         var plain = Directory.CreateDirectory(Path.Combine(_root, "plain")).FullName;
