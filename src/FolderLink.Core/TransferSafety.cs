@@ -74,8 +74,11 @@ public static class TransferSafety
     /// null if it's safe to proceed. <paramref name="freeSpace"/> maps a
     /// volume root to its free bytes (null = unknown); it defaults to
     /// <see cref="DriveFreeSpace"/> and exists so tests can fake a full disk.
+    /// <paramref name="realPathOf"/>, when given, maps an existing folder to
+    /// the file system's own spelling of it (see
+    /// <see cref="TransferPaths.Canonicalize"/>) for one more nesting check.
     /// </summary>
-    public static string? TestPreFlight(string source, string destination, Func<string, long?>? freeSpace = null)
+    public static string? TestPreFlight(string source, string destination, Func<string, long?>? freeSpace = null, Func<string, string?>? realPathOf = null)
     {
         if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination))
             return CoreStrings.BothPathsRequired;
@@ -112,6 +115,10 @@ public static class TransferSafety
         // a destination spelled through a link can't hide that it is really
         // the source or inside it.
         var nesting = CheckNesting(src, dst) ?? CheckNesting(TransferPaths.ResolveLinks(src), TransferPaths.ResolveLinks(dst));
+        // And as the file system spells them, so an 8.3 short name or a
+        // mapped drive can't hide it either (Windows passes the lookup).
+        if (nesting == null && realPathOf != null)
+            nesting = CheckNesting(TransferPaths.Canonicalize(src, realPathOf), TransferPaths.Canonicalize(dst, realPathOf));
         if (nesting != null)
             return nesting;
 

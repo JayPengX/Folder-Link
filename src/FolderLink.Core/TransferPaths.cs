@@ -85,6 +85,33 @@ public static class TransferPaths
         return current;
     }
 
+    /// <summary>
+    /// The path as the file system itself spells it: the deepest part that
+    /// exists is handed to <paramref name="realPathOf"/> (on Windows the
+    /// final path of an open handle, which expands 8.3 short names such as
+    /// PROGRA~1 and turns a mapped drive into its \\server\share path),
+    /// and the parts that don't exist yet are appended as written. Returns
+    /// the normalized path unchanged when nothing exists or the lookup gives
+    /// no answer.
+    /// </summary>
+    public static string Canonicalize(string path, Func<string, string?> realPathOf)
+    {
+        var current = Normalize(path);
+        var missing = new Stack<string>();
+        while (!Directory.Exists(current))
+        {
+            var parent = Path.GetDirectoryName(current);
+            if (parent is null) return Normalize(path);
+            missing.Push(Path.GetFileName(current));
+            current = parent;
+        }
+        string? real;
+        try { real = realPathOf(current); }
+        catch { return Normalize(path); }
+        if (string.IsNullOrEmpty(real)) return Normalize(path);
+        return Normalize(Path.Combine(new[] { real }.Concat(missing).ToArray()));
+    }
+
     private static string WithSeparator(string normalized) =>
         normalized.EndsWith(Path.DirectorySeparatorChar) || normalized.EndsWith(Path.AltDirectorySeparatorChar)
             ? normalized

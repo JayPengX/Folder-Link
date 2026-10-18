@@ -232,4 +232,32 @@ public sealed class PreFlightEdgeCaseTests : IDisposable
         Assert.Null(TransferSafety.TestPreFlight(source, NewDir("dst"), _ => null));
         Assert.Null(TransferSafety.TestPreFlight(source, NewDir("dst2"), _ => throw new IOException("boom")));
     }
+    [Fact]
+    public void Refuses_a_destination_that_is_inside_the_source_under_another_spelling()
+    {
+        // On Windows "C:\PROGRA~1\x" or a mapped drive can name a folder
+        // inside the source without sharing its spelling; the lookup gives
+        // the file system's own name, faked here: "alias" is really "src".
+        var source = NewDir("src");
+        var alias = NewDir("alias");
+        string? RealPath(string p) => TransferPaths.AreSame(p, alias) ? source : p;
+
+        Assert.Null(TransferSafety.TestPreFlight(source, Path.Combine(alias, "dst"), Plenty));
+        Assert.Equal(CoreStrings.DestinationInsideSource,
+            TransferSafety.TestPreFlight(source, Path.Combine(alias, "new", "dst"), Plenty, RealPath));
+        Assert.Equal(CoreStrings.SourceEqualsDestination,
+            TransferSafety.TestPreFlight(source, alias, Plenty, RealPath));
+    }
+
+    [Fact]
+    public void Canonicalize_keeps_the_path_when_the_lookup_fails()
+    {
+        var dir = NewDir("a");
+        var missing = Path.Combine(dir, "b", "c");
+
+        Assert.Equal(TransferPaths.Normalize(missing), TransferPaths.Canonicalize(missing, _ => null));
+        Assert.Equal(TransferPaths.Normalize(missing), TransferPaths.Canonicalize(missing, _ => throw new IOException("no")));
+        Assert.Equal(Path.Combine(_root, "z", "b", "c"),
+            TransferPaths.Canonicalize(missing, p => TransferPaths.AreSame(p, dir) ? Path.Combine(_root, "z") : p));
+    }
 }

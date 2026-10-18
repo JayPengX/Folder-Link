@@ -275,8 +275,10 @@ fixed (see that folder's own README for details).
   junctions *inside* the source are not moved (`/XJ`), so they stay
   behind and the tool stops without creating the link; move or remove
   them yourself and run it again.
-- The nesting check doesn't expand 8.3 short names (`PROGRA~1`) or see
-  that a mapped drive and its `\\server\share` path are the same place.
+- The nesting check asks Windows for each folder's real name, so an 8.3
+  short name (`PROGRA~1`) or a mapped drive can't hide that the
+  destination is inside the source. This is reviewed, not yet run on
+  Windows.
 - The disk-space check counts the whole source even when the
   destination is on the same drive, where robocopy frees space as it
   goes, so it can refuse a same-drive move that would actually fit.
