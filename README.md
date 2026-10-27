@@ -1,4 +1,13 @@
-# FolderLink
+<h1 align="center">FolderLink</h1>
+
+<p align="center">
+  <b>Move a folder, leave a link behind.</b><br>
+  <a href="https://raw.githubusercontent.com/JayPengX/Folder-Link/main/FolderLink.exe"><b>Download FolderLink.exe</b></a> · Windows 10/11, one file, no installer
+</p>
+
+<p align="center">
+  <img alt="Windows" src="https://img.shields.io/badge/Windows-10_%7C_11-0078D4?logo=windows&logoColor=fff"> <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=fff"> <img alt="C#" src="https://img.shields.io/badge/C%23-WinForms-239120"> <img alt="Languages" src="https://img.shields.io/badge/UI-%E7%B9%81%E4%B8%AD_%7C_English-555">
+</p>
 
 Move a folder's contents to a new location and leave a link behind, so
 nothing that points at the old path ever notices it moved.
