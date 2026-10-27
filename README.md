@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/FolderLink/assets/FolderLink.png" width="96" height="96" alt="">
+</p>
+
 <h1 align="center">FolderLink</h1>
 
 <p align="center">
@@ -6,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Windows" src="https://img.shields.io/badge/Windows-10_%7C_11-0078D4?logo=windows&logoColor=fff"> <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=fff"> <img alt="C#" src="https://img.shields.io/badge/C%23-WinForms-239120"> <img alt="Languages" src="https://img.shields.io/badge/UI-%E7%B9%81%E4%B8%AD_%7C_English-555">
+  <img alt="Windows" src="https://img.shields.io/badge/Windows-10_%7C_11-0078D4?logo=windows&logoColor=fff"> <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=fff"> <img alt="C#" src="https://img.shields.io/badge/C%23-WinForms-239120"> <img alt="Languages" src="https://img.shields.io/badge/UI-%E7%B9%81%E4%B8%AD_%7C_English-555"> <a href="https://github.com/JayPengX/Folder-Link/actions/workflows/windows.yml"><img alt="Windows CI" src="https://github.com/JayPengX/Folder-Link/actions/workflows/windows.yml/badge.svg"></a>
 </p>
 
 Move a folder's contents to a new location and leave a link behind, so
@@ -19,6 +23,8 @@ nothing that points at the old path ever notices it moved.
 - [Requirements](#requirements)
 - [Getting Started / Usage](#getting-started--usage)
 - [How It Works](#how-it-works)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
 - [Scenarios It Handles](#scenarios-it-handles)
 - [Is This Safe?](#is-this-safe)
 - [Verifying Your Download](#verifying-your-download)
@@ -134,6 +140,35 @@ take files with it) and recreates it as a symbolic link (via .NET's
 `Directory.CreateSymbolicLink`) pointing at the full destination path.
 Any doubt along the way (robocopy exit code 8 or more, a cancel, anything
 left in the source, the destination missing) stops before that step.
+
+## Tech Stack
+
+| Layer | What |
+| --- | --- |
+| App | C# on .NET 8, Windows Forms, published as one self-contained `win-x64` exe (no runtime to install) |
+| Moving | Windows' own `robocopy.exe`; the link made with `Directory.CreateSymbolicLink` |
+| Safety logic | `FolderLink.Core`, plain .NET with no Windows dependency, so it is tested on Linux too |
+| Languages | `.resx` resources in Traditional Chinese and English, picked from the system language |
+| Tests | xUnit (`dotnet test`, about 115 tests on real temporary folders and real links) |
+| CI | GitHub Actions on `windows-latest`: the tests, real robocopy moves end to end, and a Release build |
+
+## Project Structure
+
+```
+FolderLink.exe                the ready-to-run app (download this)
+checksums.txt                 its SHA-256
+src/
+├── FolderLink/               the window: Program.cs, Strings*.resx, app.manifest, assets/ (icon)
+├── FolderLink.Core/          every decision that could lose files:
+│                             TransferSafety, TransferPaths, Robocopy,
+│                             TransferFinalizer, LinkRestorer, WindowsPaths
+└── FolderLink.Core.Tests/    the test suite, including WindowsEndToEndTests
+scripts/
+├── build.sh                  install the SDK if missing, test, publish, copy the exe, write checksums
+└── make-icon.py              draws the app icon
+legacy-script-version/        the old PowerShell + .bat version
+.github/workflows/windows.yml CI on real Windows
+```
 
 ## Scenarios It Handles
 
@@ -269,16 +304,14 @@ The code is split into two parts:
   allowed case.
 - **[`src/FolderLink`](src/FolderLink)** — the WinForms UI, starting
   `robocopy.exe` and showing its output, and admin elevation via the
-  app manifest. This part is
-  Windows-only — robocopy isn't available on Linux and WinForms can't
-  render there — so it is **not covered by automated tests**. It has
-  been verified by compiling cleanly and by careful manual code review,
-  not by actually running it: this project has been developed and
-  tested entirely from Linux, and no session so far has had access to a
-  real Windows machine. Treat this part as "should work" rather than
-  "verified end-to-end," and if you ever get access to real Windows,
-  running the actual exe through a real transfer is the one check no
-  amount of code review can substitute for.
+  app manifest. It is wiring around the Core calls above.
+
+On every push, [GitHub Actions runs on real Windows](.github/workflows/windows.yml)
+(`windows-latest`): the whole Core suite, `WindowsEndToEndTests` (a real
+robocopy move to a link and back, a drive root, an 8.3 name, a `subst`
+drive), and a Release build of the app. What CI can't do is click
+through the window itself, so a person running the actual
+`FolderLink.exe` end to end is still the most valuable check there is.
 
 ## Legacy PowerShell Version
 
